@@ -21,10 +21,10 @@ class <your class>:
         # function that sends an emit to the websocket, to whoever ran the job.
         ws_send(self.sid, self.payload, 'Send some output to the user...')
         # optionally return xls bytes output to be emailed to the user.  You can use xlsxwriter module to get this output
-        # please see coregrapher_v2 > app > subjob > coregrapher > printoutput.py for an example.
+        # please see webapp > app > subjob > templatesubjob > printoutput.py for an example.
 ------------------------
 
-You will need to add the following to 'coregrapher_v2 > app > templates > index.html'
+You will need to add the following to 'webapp > app > templates > index.html'
 
 <body><tr><td><select><option value="<<name of your directory>>"><<name of your directory>></option></select><td></body>
 
@@ -34,7 +34,7 @@ You will need to add the following to 'coregrapher_v2 > app > templates > index.
 PUT STUFF YOU WANT TO PROMPT USER FOR HERE
 
 eg.
-            <div id="coregrapher" style="display:none">
+            <div id="templatesubjob" style="display:none">
                 some stuff here
             </div>
 
