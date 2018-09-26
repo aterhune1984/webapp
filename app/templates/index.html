@@ -1,0 +1,141 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <title>Python Script Runner</title>
+    <script src="{{url_for('static', filename='jquery.min.js')}}"></script>
+    <script src="{{url_for('static', filename='socket.io.min.js')}}"></script>
+    <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+
+            // Use a "/socket" namespace.
+            // An application can open a connection on multiple namespaces, and
+            // Socket.IO will multiplex all those connections on a single
+            // physical channel. If you don't care about multiple channels, you
+            // can set the namespace to an empty string.
+            namespace = '/socket';
+
+            // Connect to the Socket.IO server.
+            // The connection URL has the following format:
+            //     http[s]://<domain>:<port>[/<namespace>]
+            var socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port + namespace);
+
+            // Event handler for new connections.
+            // The callback function is invoked when a connection with the
+            // server is established.
+            socket.on('connect', function() {
+                socket.emit('my_event', {data: 'I\'m connected!'});
+                isopen = true;
+            });
+
+            // handler for server sending data to client.
+            // The callback function is invoked whenever the server emits data
+            // to the client. The data is then displayed in the "Received"
+            // section of the page.
+            socket.on('my_response', function(msg) {
+                console.log('recieved '+ msg.data)
+                var lineBreak = '<br>';
+                var currentText = document.getElementById('result').innerHTML + msg.data;
+                var lines = currentText.split(lineBreak);
+                lines = lines.slice(-20);
+                document.getElementById('result').innerHTML = lines.join(lineBreak);
+            });
+
+            socket.on('redirectme', function(msg) {
+                var strWindowFeatures = "location=yes,height=570,width=520,scrollbars=yes,status=yes";
+                var URL = location.protocol + '//' + document.domain + ':' + location.port + '/saml/login';
+                var win = window.open(URL, "_blank", strWindowFeatures);
+            });
+
+            // handler for server sending data to client.
+            // The callback function is invoked whenever the server emits data
+            // to the client. The data is then displayed in the "Received"
+            // section of the page.
+            socket.on('my_time', function(msg) {
+                console.log('recieved '+ msg.data)
+                document.getElementById('time').innerHTML = msg.data
+            });
+
+            // Handler for submitting job to server.
+            // These accept data from the user and send it to the server in a
+            // variety of ways
+            $('form#job').submit(function(event) {
+                var nameValue = JSON.stringify($(event.target).serializeArray());
+                console.log(nameValue)
+                socket.emit('job_submit', {data: nameValue});
+                var lineBreak = '<br>';
+                var currentText = document.getElementById('result').innerHTML + 'sent job request to server...<br>';
+                var lines = currentText.split(lineBreak);
+                lines = lines.slice(-20);
+                document.getElementById('result').innerHTML = lines.join(lineBreak);
+                return false;
+            });
+        });
+
+
+    </script>
+</head>
+<body>
+﻿   <br>
+
+﻿   <form id="job" method="POST" action="#">
+    <table style="text-align: left; width: 1024px; height: 371px;"
+               border="1" cellpadding="2" cellspacing="2">
+    <tbody>
+    <tr>
+        <td style="vertical-align: top;">
+            Select what job to run:
+            <select onchange="myFunction(this)" name="task" id="subjob">
+                <option value="templatesubjob">templatesubjob</option>
+            </select>
+
+
+            <div id="templatesubjob" style="display:none">
+                This will spike the CPU of this machine for a short amount of time.  This can be submitted multiple times<br>
+                and will kick off multiple worker threads using celery workers<br>
+            </div>
+
+
+            <br>
+            <br>
+            <br>
+        </td>
+        <td style="vertical-align: top;"><br>
+            v0.1
+        </td>
+    </tr>
+    </tbody>
+    </table>
+    <input type="submit" value="Send">
+</form>
+<div id="result"></div>
+<div id="time"></div>
+
+<script>
+function myFunction(selectObject) {
+    var selectedValue = selectObject.value;
+    var values = [];
+    var options = selectObject.options;
+    var i = 0, len = options.length;
+    while (i < len)
+    {
+        values.push(options[i++].value);
+    }
+
+    for (i = 0; i < values.length; ++i) {
+        if (selectedValue === values[i]) {
+            var div = document.getElementById(values[i])
+            div.style.display = "block";
+            var displayed = i
+        }
+    }
+    for (i = 0; i < values.length; ++i) {
+        if ( values[i] != values[displayed] ) {
+            var div = document.getElementById(values[i])
+            div.style.display = "none";
+        }
+    }
+}
+</script>
+
+</body>
+</html>
