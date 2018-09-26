@@ -1,0 +1,4 @@
+# to ssh into private instance
+ssh-add -K <private Key>
+ssh -L ec2-user@<bastion host>
+ssh ec2-user@<private host>
