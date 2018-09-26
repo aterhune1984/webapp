@@ -35,12 +35,7 @@ PUT STUFF YOU WANT TO PROMPT USER FOR HERE
 
 eg.
             <div id="coregrapher" style="display:none">
-                Coregrapher will generate an xlsx file of a specific account's information.<br>
-                Fields include: <br>
-                Device,Name,Nickname,DataCenter,Platform,Status,Primary IP,Private IP,Additional IP's,Network,Segment,Network Type,Switch Name,Switch Port,Interface Speed,Interface Status,Vlans,Learned_Macs,Downlink_Port-->Uplink_Port/Neighbor Switch <br>
-                Enter Account Number:<input name="coregrapher.account" id="coregrapher.account" type="text"><br>
-                Pull from Core?<input id="coregrapher.pull" name="coregrapher.pull" checked="checked" type="checkbox"><br>
-                Force update if data exists in coregrapher cache?<input id="coregrapher.force" name="coregrapher.force" type="checkbox"><br>
+                some stuff here
             </div>
 
 </div></td></tr></body>
