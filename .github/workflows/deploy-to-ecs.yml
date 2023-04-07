@@ -50,10 +50,36 @@ jobs:
         aws logs create-log-group --log-group-name my-app-logs
         aws ecs describe-tasks --cluster ${{ secrets.ECS_CLUSTER_NAME }} --tasks "$(aws ecs list-tasks --cluster ${{ secrets.ECS_CLUSTER_NAME }} --service-name ${{ secrets.ECS_SERVICE_NAME }} --desired-status RUNNING --output text | cut -f 2)" --output json | jq -r '.tasks[].containers[].taskArn' | xargs -I {} aws logs create-log-stream --log-group-name my-app-logs --log-stream-name {}
 
-    - name: Wait for 48 hours
-      run: sleep 172800
+    - name: Create Lambda function from S3
+      uses: aws-actions/aws-cli@v1
+      with:
+        args: |
+          s3 cp s3://${{ secrets.S3_BUCKET_NAME }}/lambda_function.py /tmp/lambda_function.py
+          aws lambda create-function \
+            --function-name my-lambda-function \
+            --runtime python3.8 \
+            --handler lambda_function.lambda_handler \
+            --role ${{ secrets.LAMBDA_EXECUTION_ROLE_ARN }} \
+            --zip-file fileb:///tmp/lambda_function.py
+      id: create-lambda-function
 
-    - name: Teardown application
-      run: |
-        aws ecs update-service --cluster ${{ secrets.ECS_CLUSTER_NAME }} --service ${{ secrets.ECS_SERVICE_NAME }} --desired-count 0
-        aws ecs delete-service --cluster ${{ secrets.ECS_CLUSTER_NAME }} --service ${{ secrets.ECS_SERVICE_NAME }}
+    - name: Schedule environment destruction
+      uses: aws-actions/aws-cli@v1
+      with:
+        args: events put-rule --name "destroy-environment-${{ github.run_id }}" --schedule-expression "rate(48 hours)"
+      id: put-rule
+
+    - name: Get rule ARN
+      uses: aws-actions/aws-cli@v1
+      with:
+        args: events describe-rule --name "destroy-environment-${{ github.run_id }}"
+      id: describe-rule
+      continue-on-error: true
+
+    - name: Add permission for Lambda to delete ECS environment
+      uses: aws-actions/aws-lambda-add-permission@v1
+      with:
+        statement_id: ${{ github.run_id }}
+        action: "lambda:InvokeFunction"
+        principal: events.amazonaws.com
+
