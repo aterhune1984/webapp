@@ -1,4 +1,4 @@
-name: untested, Deploy to Amazon ECS and cleanup
+name: Deploy to Amazon ECS
 
 on:
   workflow_dispatch:
