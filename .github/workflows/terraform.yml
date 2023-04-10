@@ -44,19 +44,20 @@ jobs:
         run: terraform init -backend-config="bucket=$BUCKET_TF_STATE"
 
       - name: Terraform validate
+        if: github.event_name == 'pull_request' && github.event.action == 'opened'
         id: validate
         run: terraform validate
 
 
       - name: Terraform plan
         id: plan
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && github.event.action == 'opened'
         run: terraform plan -no-color -input=false
         continue-on-error: true
 
 
       - uses: actions/github-script@v6
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && github.event.action == 'opened'
         env:
           PLAN: "terraform\n${{ steps.plan.outputs.stdout }}"
         with:
@@ -99,7 +100,7 @@ jobs:
 
       # This step destroys the Terraform environment upon closing a pull request against the staging branch
       - name: Terraform destroy staging
-        if: github.event_name == 'pull_request' && github.event.action == 'merged' && github.base_ref == 'STAGING'
+        if: github.event.action == 'merged' && github.base_ref == 'STAGING'
         env:
           TF_VAR_environment: STAGING
         run: |
@@ -112,7 +113,7 @@ jobs:
 
       # This step applies the Terraform configuration to the master environment if the staging apply was successful
       - name: Terraform apply to master
-        if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.head_ref == 'STAGING' && github.event.pull_request.merged == true && steps.terraform_apply_to_staging.outputs.apply-successful == 'true'
+        if: github.event_name == 'pull_request' && github.event.action == 'merged' && github.head_ref == 'STAGING' && github.event.pull_request.merged == true && steps.terraform_apply_to_staging.outputs.apply-successful == 'true'
 
         env:
           TF_VAR_environment: master
