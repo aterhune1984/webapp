@@ -1,10 +1,14 @@
 name: "Terraform Infrastructure Change Management Pipeline with GitHub Actions"
 
 on:
- pull_request:
-   branches:
-   - master
+  pull_request:
+    types: [opened,reopened,synchronize]
 #   paths:
+#   - terraform/**
+  push:
+    branches:
+    - master
+#    paths:
 #   - terraform/**
 
 env:
@@ -81,5 +85,5 @@ jobs:
        run: exit 1
 
      - name: Terraform Apply
-       if: github.ref == 'refs/heads/master' && github.event_name == 'merge'
+       if: github.ref == 'refs/heads/master'
        run: terraform apply -auto-approve -input=false
