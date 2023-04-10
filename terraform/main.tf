@@ -15,9 +15,8 @@ provider "aws" {
  region = "us-east-2"
 }
 
-
 resource "aws_elasticache_cluster" "redis" {
-  cluster_id           = "redis-cluster"
+  cluster_id           = "redis-cluster2"
   engine               = "redis"
   node_type            = "cache.t4g.micro"
   num_cache_nodes      = 1
