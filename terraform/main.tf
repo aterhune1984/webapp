@@ -11,12 +11,13 @@ terraform {
  }
 }
 
+
 provider "aws" {
  region = "us-east-2"
 }
 
 resource "aws_elasticache_cluster" "redis" {
-  cluster_id           = "redis-cluster4"
+  cluster_id           = "redis-cluster5"
   engine               = "redis"
   node_type            = "cache.t4g.micro"
   num_cache_nodes      = 1
