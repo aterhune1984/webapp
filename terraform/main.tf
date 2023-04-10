@@ -15,10 +15,17 @@ provider "aws" {
  region = "us-east-2"
 }
 
-resource "aws_instance" "test_instance" {
- ami           = "ami-830c94e3"
- instance_type = "t2.nano"
- tags = {
-   Name = "test_instance"
- }
+
+resource "aws_elasticache_cluster" "redis" {
+  cluster_id           = "redis-cluster"
+  engine               = "redis"
+  node_type            = "cache.t4g.micro"
+  num_cache_nodes      = 1
+  parameter_group_name = "default.redis7"
+  engine_version       = "7.0"
+  port                 = 6379
+}
+
+output "redis_endpoint" {
+  value = aws_elasticache_cluster.redis.cluster_address
 }
