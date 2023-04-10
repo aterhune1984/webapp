@@ -12,6 +12,7 @@ on:
 #   paths:
 #   - terraform/**
 
+
 env:
  # verbosity setting for Terraform logs
  TF_LOG: INFO
