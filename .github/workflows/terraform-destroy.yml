@@ -1,0 +1,35 @@
+name: "Terraform Infrastructure Destroy Pipeline with GitHub Actions"
+
+on:
+  workflow_dispatch:
+
+env:
+  TF_LOG: INFO
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_PROD_USER }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_PROD_KEY }}
+  BUCKET_TF_STATE: ${{ secrets.BUCKET_TF_STATE}}
+
+jobs:
+  terraform-destroy:
+    name: "Terraform Infrastructure Destroy"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./terraform
+    steps:
+      - name: Checkout the repository to the runner
+        uses: actions/checkout@v3
+
+      - name: Setup Terraform with specified version on the runner
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.4.4
+
+      - name: Terraform init
+        id: init
+        run: terraform init -backend-config="bucket=$BUCKET_TF_STATE"
+
+      - name: Terraform destroy
+        if: github.event_name == 'workflow_dispatch'
+        run: terraform destroy -auto-approve
