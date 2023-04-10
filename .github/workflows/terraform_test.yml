@@ -1,0 +1,104 @@
+name: Terraform Workflow
+
+on:
+  pull_request:
+    branches:
+      - staging
+      - master
+    paths:
+    - terraform/**
+
+env:
+ # verbosity setting for Terraform logs
+ TF_LOG: INFO
+ # Credentials for deployment to AWS
+ AWS_ACCESS_KEY_ID: ${{ secrets.AWS_PROD_USER }}
+ AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_PROD_KEY }}
+ # S3 bucket for the Terraform state
+ BUCKET_TF_STATE: ${{ secrets.BUCKET_TF_STATE}}
+
+
+jobs:
+  build-terraform:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      # This step sets up the Terraform environment
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      # This step initializes the Terraform working directory
+      - name: Terraform init
+        id: init
+        run: terraform init -backend-config="bucket=$BUCKET_TF_STATE"
+
+
+      - name: Terraform plan
+        id: plan
+        if: github.event_name == 'pull_request'
+        run: terraform plan -no-color -input=false
+        continue-on-error: true
+
+
+      - uses: actions/github-script@v6
+        if: github.event_name == 'pull_request'
+        env:
+          PLAN: "terraform\n${{ steps.plan.outputs.stdout }}"
+        with:
+          script: |
+            const output = `#### Terraform Format and Style 🖌\`${{ steps.fmt.outcome }}\`
+            #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
+            #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
+            #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
+            
+            <details><summary>Show Plan</summary>
+            
+            \`\`\`\n
+            ${process.env.PLAN}
+            \`\`\`
+            
+            </details>
+            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
+
+      - name: Terraform Plan Status
+        if: steps.plan.outcome == 'failure'
+        run: exit 1
+
+
+      # This step applies the Terraform configuration to the staging environment
+      - name: Terraform apply to staging
+        if: github.event_name == 'pull_request' && github.event.action == 'opened' && github.head_ref == 'staging'
+        env:
+          TF_VAR_environment: staging
+        run: |
+          terraform apply -auto-approve
+          echo "::set-output name=apply-successful::true"
+
+
+      # This step destroys the Terraform environment upon closing a pull request against the staging branch
+      - name: Terraform destroy staging
+        if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.head_ref == 'staging'
+        env:
+          TF_VAR_environment: staging
+        run: |
+          if [ "${{ github.event.pull_request.merged }}" = "true" ]; then
+            terraform destroy -auto-approve
+          else
+            echo "Pull request not merged, skipping Terraform destroy."
+          fi
+
+
+      # This step applies the Terraform configuration to the master environment if the staging apply was successful
+      - name: Terraform apply to master
+        if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.head_ref == 'staging' && github.event.pull_request.merged == true && steps.terraform_apply_to_staging.outputs.apply-successful == 'true'
+        env:
+          TF_VAR_environment: master
+        run: terraform apply -auto-approve
