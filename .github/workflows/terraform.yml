@@ -1,13 +1,10 @@
-name: "Terraform Infrastructure Change Management Pipeline with GitHub Actions"
+name: Terraform Workflow
 
 on:
   pull_request:
-    types: [opened,reopened,synchronize]
-    paths:
-    - terraform/**
-  push:
     branches:
-    - master
+      - staging
+      - master
     paths:
     - terraform/**
 
