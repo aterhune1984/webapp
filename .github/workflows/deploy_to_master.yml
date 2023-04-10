@@ -1,0 +1,48 @@
+name: Deploy to Master
+
+on:
+  workflow_dispatch:
+#  pull_request:
+#    branches:
+#      - master
+#    types:
+#      - opened
+#      - edited
+#      - reopened
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: 1.0.5
+
+      - name: Initialize Terraform
+        run: terraform init
+
+      - name: Plan Terraform
+        run: terraform plan -out=terraform.plan
+
+      - name: PR Approval
+        uses: peter-evans/create-pull-request-comment@v1.4.4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          message: |
+            The Terraform plan has been created. Please review and approve the changes if they look good.
+
+      - name: Wait for Approval
+        if: github.ref == 'refs/heads/master' && github.event.pull_request.merged == false
+        uses: thollander/wait-for-approval@v1.1.1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Apply Terraform
+        if: github.ref == 'refs/heads/master' && github.event.pull_request.merged == true
+        env:
+          TF_VAR_environment: "production"
+        run: terraform apply -auto-approve terraform.plan
