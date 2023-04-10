@@ -20,7 +20,15 @@ env:
 
 jobs:
   build-terraform:
+    name: "Terraform Infrastructure Build"
+
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        # We keep Terraform files in the terraform directory.
+        working-directory: ./terraform
+
     steps:
       - uses: actions/checkout@v3
 
