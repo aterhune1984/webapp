@@ -3,7 +3,7 @@ name: Terraform Workflow
 on:
   pull_request:
     branches:
-      - staging
+      - STAGING
       - master
     paths:
     - terraform/**
@@ -75,9 +75,9 @@ jobs:
 
       # This step applies the Terraform configuration to the staging environment
       - name: Terraform apply to staging
-        if: github.event_name == 'pull_request' && github.event.action == 'opened' && github.head_ref == 'staging'
+        if: github.event_name == 'pull_request' && github.event.action == 'opened' && github.head_ref == 'STAGING'
         env:
-          TF_VAR_environment: staging
+          TF_VAR_environment: STAGING
         run: |
           terraform apply -auto-approve
           echo "::set-output name=apply-successful::true"
@@ -85,9 +85,9 @@ jobs:
 
       # This step destroys the Terraform environment upon closing a pull request against the staging branch
       - name: Terraform destroy staging
-        if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.head_ref == 'staging'
+        if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.head_ref == 'STAGING'
         env:
-          TF_VAR_environment: staging
+          TF_VAR_environment: STAGING
         run: |
           if [ "${{ github.event.pull_request.merged }}" = "true" ]; then
             terraform destroy -auto-approve
@@ -98,7 +98,7 @@ jobs:
 
       # This step applies the Terraform configuration to the master environment if the staging apply was successful
       - name: Terraform apply to master
-        if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.head_ref == 'staging' && github.event.pull_request.merged == true && steps.terraform_apply_to_staging.outputs.apply-successful == 'true'
+        if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.head_ref == 'STAGING' && github.event.pull_request.merged == true && steps.terraform_apply_to_staging.outputs.apply-successful == 'true'
         env:
           TF_VAR_environment: master
         run: terraform apply -auto-approve
