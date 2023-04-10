@@ -75,6 +75,7 @@ jobs:
 
       # This step applies the Terraform configuration to the staging environment
       - name: Terraform apply to staging
+
         if: github.event_name == 'pull_request' && github.event.action == 'opened' && github.head_ref == 'STAGING'
         env:
           TF_VAR_environment: STAGING
@@ -85,6 +86,7 @@ jobs:
 
       # This step destroys the Terraform environment upon closing a pull request against the staging branch
       - name: Terraform destroy staging
+
         if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.head_ref == 'STAGING'
         env:
           TF_VAR_environment: STAGING
@@ -99,6 +101,7 @@ jobs:
       # This step applies the Terraform configuration to the master environment if the staging apply was successful
       - name: Terraform apply to master
         if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.head_ref == 'STAGING' && github.event.pull_request.merged == true && steps.terraform_apply_to_staging.outputs.apply-successful == 'true'
+
         env:
           TF_VAR_environment: master
         run: terraform apply -auto-approve
