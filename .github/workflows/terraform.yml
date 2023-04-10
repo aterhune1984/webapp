@@ -4,13 +4,13 @@ on:
  push:
    branches:
    - master
-   paths:
-   - terraform/**
+#   paths:
+#   - terraform/**
  pull_request:
    branches:
    - master
-   paths:
-   - terraform/**
+#   paths:
+#   - terraform/**
 
 env:
  # verbosity setting for Terraform logs
