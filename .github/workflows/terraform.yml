@@ -117,6 +117,7 @@ jobs:
               repo: context.repo.repo,
               ref: context.payload.pull_request.head.ref
             })
+            console.log(runs)
             const run = runs.data.find((run) => run.name === 'Terraform Infrastructure Build')
             if (!run) {
               console.error('Could not find Terraform Infrastructure Build check run')
@@ -135,7 +136,7 @@ jobs:
 
       # This step applies the Terraform configuration to the master environment if the staging apply was successful
       - name: Terraform apply to master
-        if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.head_ref == 'STAGING'
+        if: github.event_name == 'pull_request' && github.event.action == 'opened' && github.head_ref == 'STAGING'
         env:
           TF_VAR_environment: master
         run: terraform apply -auto-approve
