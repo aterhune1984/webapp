@@ -5,15 +5,15 @@ on:
     branches:
       - STAGING
       - master
-    paths:
-    - terraform/**
+#    paths:
+#    - terraform/**
   # add another trigger for pull request merge
   pull_request_target:
     types: [closed]
     branches:
       - STAGING
-    paths:
-    - terraform/**
+#    paths:
+#    - terraform/**
 
 env:
  # verbosity setting for Terraform logs
