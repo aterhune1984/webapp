@@ -7,6 +7,13 @@ on:
       - master
     paths:
     - terraform/**
+  # add another trigger for pull request merge
+  pull_request_target:
+    types: [closed]
+    branches:
+      - STAGING
+    paths:
+    - terraform/**
 
 env:
  # verbosity setting for Terraform logs
@@ -108,7 +115,6 @@ jobs:
       # This step applies the Terraform configuration to the master environment if the staging apply was successful
       - name: Terraform apply to master
         if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.head_ref == 'STAGING' && github.event.pull_request.merged == true && steps.terraform_apply_to_staging.outputs.apply-successful == 'true'
-
         env:
           TF_VAR_environment: master
         run: terraform apply -auto-approve
