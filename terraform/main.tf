@@ -16,7 +16,7 @@ provider "aws" {
 }
 
 resource "aws_elasticache_cluster" "redis" {
-  cluster_id           = "redis-cluster10"
+  cluster_id           = "redis-cluster11"
   engine               = "redis"
   node_type            = "cache.t4g.micro"
   num_cache_nodes      = 1
