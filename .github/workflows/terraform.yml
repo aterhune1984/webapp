@@ -5,8 +5,15 @@ on:
     branches:
       - STAGING
       - master
-    paths:
-    - terraform/**
+#    paths:
+#    - terraform/**
+  # add another trigger for pull request merge
+  pull_request_target:
+    types: [opened,closed]
+    branches:
+      - STAGING
+#    paths:
+#    - terraform/**
 
 env:
  # verbosity setting for Terraform logs
@@ -97,21 +104,17 @@ jobs:
           terraform apply -auto-approve
           echo "::set-output name=apply-successful::true"
 
-
       # This step destroys the Terraform environment upon closing a pull request against the staging branch
       - name: Terraform destroy staging
-        if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.base_ref == 'STAGING' && github.event.pull_request.merged
+        if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.base_ref == 'STAGING' && github.event.pull_request.merged == true && github.head_ref == 'STAGING'
         env:
           TF_VAR_environment: STAGING
         run: |
             terraform destroy -auto-approve
 
-
-
       # This step applies the Terraform configuration to the master environment if the staging apply was successful
       - name: Terraform apply to master
         if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.head_ref == 'STAGING' && github.event.pull_request.merged == true && steps.terraform_apply_to_staging.outputs.apply-successful == 'true'
-
         env:
           TF_VAR_environment: master
         run: terraform apply -auto-approve
