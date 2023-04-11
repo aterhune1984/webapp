@@ -136,7 +136,7 @@ jobs:
 
       # This step applies the Terraform configuration to the master environment if the staging apply was successful
       - name: Terraform apply to master
-        if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.head_ref == 'STAGING'
+        if: github.event_name == 'pull_request' && github.event.action == 'opened' && github.head_ref == 'STAGING'
         env:
           TF_VAR_environment: master
         run: terraform apply -auto-approve
