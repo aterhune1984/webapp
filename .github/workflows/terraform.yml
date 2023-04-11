@@ -97,16 +97,13 @@ jobs:
           terraform apply -auto-approve
           echo "::set-output name=apply-successful::true"
 
-
       # This step destroys the Terraform environment upon closing a pull request against the staging branch
       - name: Terraform destroy staging
-        if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.base_ref == 'STAGING' && github.event.pull_request.merged
+        if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.base_ref == 'STAGING' && github.event.pull_request.merged == true && github.head_ref == 'STAGING'
         env:
           TF_VAR_environment: STAGING
         run: |
             terraform destroy -auto-approve
-
-
 
       # This step applies the Terraform configuration to the master environment if the staging apply was successful
       - name: Terraform apply to master
