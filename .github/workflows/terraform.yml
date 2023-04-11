@@ -9,7 +9,7 @@ on:
 #    - terraform/**
   # add another trigger for pull request merge
   pull_request_target:
-    types: [closed]
+    types: [opened,closed]
     branches:
       - STAGING
 #    paths:
