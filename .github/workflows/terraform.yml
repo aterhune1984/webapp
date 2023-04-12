@@ -107,12 +107,28 @@ jobs:
         run: |
             terraform destroy -auto-approve
 
-      - name: Open pull request to merge STAGING into master
-        if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.base_ref == 'STAGING'
-        uses: peter-evans/create-pull-request@v5
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          title: 'Merge STAGING into master'
-          body: 'This pull request merges the STAGING branch into master branch'
-          branch: master
-          base: STAGING
+      - name: Create Pull Request
+        needs: build-terraform
+        if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.base_ref == 'STAGING' && needs.build-terraform.outputs.apply-successful == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_TITLE: "Automated Pull Request"
+          PR_BODY: "This is an automated pull request created by the GitHub Actions workflow."
+          PR_HEAD: "STAGING"
+          PR_BASE: "master"
+        run: |
+          # Get the repository owner and name from the GitHub context
+          OWNER=$(echo $GITHUB_REPOSITORY | cut -d '/' -f1)
+          REPO=$(echo $GITHUB_REPOSITORY | cut -d '/' -f2)
+      
+          # Create the pull request using the GitHub REST API
+          curl --request POST \
+            --url https://api.github.com/repos/$OWNER/$REPO/pulls \
+            --header "authorization: Bearer $GITHUB_TOKEN" \
+            --header 'content-type: application/json' \
+            --data "{
+              \"title\": \"$PR_TITLE\",
+              \"body\": \"$PR_BODY\",
+              \"head\": \"$PR_HEAD\",
+              \"base\": \"$PR_BASE\"
+            }"
