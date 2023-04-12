@@ -63,24 +63,24 @@ resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy_attach
 }
 
 # Create a new ECS task definition for the web application
-resource "aws_ecs_task_definition" "ecs_task_definition" {
-  family                   = "my-ecs-task"
-  container_definitions    = jsonencode([{
-    name      = "my-web-app"
-    image     = "<your-docker-image-uri>"
-    portMappings = [
-      {
-        containerPort = 8080
-        hostPort      = 8080
-      }
-    ]
-  }])
-  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
-  network_mode             = "awsvpc"
-  requires_compatibilities = ["FARGATE"]
-  memory                   = 512
-  cpu                      = 256
-}
+#resource "aws_ecs_task_definition" "ecs_task_definition" {
+#  family                   = "my-ecs-task"
+#  container_definitions    = jsonencode([{
+#    name      = "my-web-app"
+#    image     = "<your-docker-image-uri>"
+#    portMappings = [
+#      {
+#        containerPort = 8080
+#        hostPort      = 8080
+#      }
+#    ]
+#  }])
+#  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
+#  network_mode             = "awsvpc"
+#  requires_compatibilities = ["FARGATE"]
+#  memory                   = 512
+#  cpu                      = 256
+#}
 
 # Create a new  ssecurity group for the ECS tasks
 resource "aws_security_group" "ecs_task_security_group" {
