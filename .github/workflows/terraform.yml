@@ -99,6 +99,14 @@ jobs:
           terraform apply -auto-approve
           echo "::set-output name=apply-successful::true"
 
+      - name: Do Unit Tests
+        if: github.event_name == 'pull_request' && github.event.action == 'opened' && github.base_ref == 'STAGING'
+        run: echo "Hello World"
+
+      - name: Do Integration Tests
+        if: github.event_name == 'pull_request' && github.event.action == 'opened' && github.base_ref == 'STAGING'
+        run: echo "Hello another World"
+
       # This step destroys the Terraform environment upon closing a pull request against the staging branch
       - name: Terraform destroy staging
         if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.base_ref == 'STAGING'
@@ -106,37 +114,3 @@ jobs:
           TF_VAR_environment: STAGING
         run: |
             terraform destroy -auto-approve
-
-      - name: Check Terraform apply to staging status
-        if: github.event_name == 'pull_request' && github.event.action == 'opened' && github.base_ref == 'master'
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const runs = await github.rest.checks.listForRef({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              ref: context.payload.pull_request.head.ref
-            })
-            const run = runs.data.check_runs.find((run) => run.name === 'Terraform Infrastructure Build')
-            console.log(run)
-            if (!run) {
-              console.error('Could not find Terraform Infrastructure Build check run')
-              process.exit(1)
-            }
-            const applyStep = run.steps.find((step) => step.name === 'Terraform apply to staging')
-            if (!applyStep) {
-              console.error('Could not find Terraform apply to staging step')
-              process.exit(1)
-            }
-            if (applyStep.conclusion === 'failure') {
-              console.error('Terraform apply to staging step failed')
-              process.exit(1)
-            }
-          
-
-      # This step applies the Terraform configuration to the master environment if the staging apply was successful
-      - name: Terraform apply to master
-        if: github.event_name == 'pull_request' && github.event.action == 'opened' && github.head_ref == 'STAGING'
-        env:
-          TF_VAR_environment: master
-        run: terraform apply -auto-approve
