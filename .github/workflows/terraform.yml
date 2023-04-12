@@ -108,7 +108,6 @@ jobs:
             terraform destroy -auto-approve
 
       - name: Create Pull Request
-        needs: build-terraform
         if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.base_ref == 'STAGING' && needs.build-terraform.outputs.apply-successful == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
