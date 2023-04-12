@@ -67,7 +67,7 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
   family                   = "my-ecs-task"
   container_definitions    = jsonencode([{
     name      = "my-web-app"
-    image     = "<your-docker-image-uri>"
+    image     = "python:3.8"
     portMappings = [
       {
         containerPort = 8080
@@ -82,7 +82,7 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
   cpu                      = 256
 }
 
-# Create a new security group for the ECS tasks
+# Create a new  ssecurity group for the ECS tasks
 resource "aws_security_group" "ecs_task_security_group" {
   name_prefix = "ecs-task-sg-"
 
