@@ -101,7 +101,7 @@ jobs:
         env:
           TF_VAR_environment: STAGING
         run: |
-          terraform apply -auto-approve -var-file=tfplan
+          terraform apply -auto-approve "tfplan"
           echo "::set-output name=apply-successful::true"
 
       #- name: Do Integration Tests
