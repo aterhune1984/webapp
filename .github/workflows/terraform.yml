@@ -111,7 +111,7 @@ jobs:
         if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.base_ref == 'STAGING' && needs.build-terraform.outputs.apply-successful == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_TITLE: "Automated Pull Request"
+          PR_TITLE: "Automated  Pull Request"
           PR_BODY: "This is an automated pull request created by the GitHub Actions workflow."
           PR_HEAD: "STAGING"
           PR_BASE: "master"
