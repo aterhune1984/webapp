@@ -34,18 +34,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v2
-        with:
-          node-version: '14.x'
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Add Peter Evans' create-pull-request action
-        run: npm install @peter-evans/create-pull-request@v5
-
       # This step sets up the Terraform environment
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v2
@@ -121,7 +109,7 @@ jobs:
 
       - name: Open pull request to merge STAGING into master
         if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.base_ref == 'STAGING'
-        uses: peter-evans/create-pull-request@v3.12.0
+        uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           title: 'Merge STAGING into master'
