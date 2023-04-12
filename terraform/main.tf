@@ -96,7 +96,6 @@ resource "aws_security_group" "ecs_task_security_group" {
   }
 }
 
-# Create a new ECS service for the web application
 resource "aws_ecs_service" "ecs_service" {
   name            = "my-ecs-service"
   cluster         = aws_ecs_cluster.ecs_cluster.id
@@ -105,10 +104,9 @@ resource "aws_ecs_service" "ecs_service" {
 
   network_configuration {
     subnets          = module.vpc.private_subnets
-    security_groups  = [aws_security_group.ecs_task_security_group]
+    security_groups  = [aws_security_group.ecs_task_security_group.id] # Use the ID of the security group
     assign_public_ip = false
+  }
 
-}
-
-depends_on = [aws_ecs_task_definition.ecs_task_definition]
+  depends_on = [aws_ecs_task_definition.ecs_task_definition]
 }
