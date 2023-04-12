@@ -113,6 +113,6 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           title: 'Merge STAGING into master'
-          body: 'This pull request merges the STAGING branch into master'
+          body: 'This pull request merges the STAGING branch into master branch'
           branch: master
           base: STAGING
