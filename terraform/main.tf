@@ -62,7 +62,7 @@ resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy_attach
   role       = aws_iam_role.ecs_task_execution_role.name
 }
 
-# Create a new ECS task definition for the web application
+# Create a new  ECS task definition for the web application
 resource "aws_ecs_task_definition" "ecs_task_definition" {
   family                   = "my-ecs-task"
   container_definitions    = jsonencode([{
