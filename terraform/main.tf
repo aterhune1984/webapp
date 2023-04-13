@@ -15,32 +15,27 @@ provider "aws" {
  region = "us-east-2"
 }
 
-resource "aws_ecr_repository" "my_repo" {
-  name = "my-repo-name"
+# Define the VPC for the EKS cluster
+resource "aws_vpc" "example_vpc" {
+  cidr_block = "10.0.0.0/16"
+
+  tags = {
+    Name = "example-vpc"
+  }
 }
 
-# Create a new VPC for the ECS cluster
-module "vpc" {
-  source = "terraform-aws-modules/vpc/aws"
+# Define the private subnets for the EKS cluster
+resource "aws_subnet" "private" {
+  count = 3
 
-  name = "ecs-vpc"
-  cidr = "10.0.0.0/16"
+  cidr_block = "10.0.${count.index + 1}.0/24"
 
-  azs             = ["us-east-2a", "us-east-2b", "us-east-2c"]
-  private_subnets = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
-  public_subnets  = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24"]
-
-  enable_nat_gateway = true
+  vpc_id = aws_vpc.example_vpc.id
 }
 
-# Create a new ECS cluster
-resource "aws_ecs_cluster" "ecs_cluster" {
-  name = "my-ecs-cluster"
-}
-
-# Create a new IAM task execution role for ECS tasks
-resource "aws_iam_role" "ecs_task_execution_role" {
-  name = "ecs-task-execution-role"
+# Define the IAM role for the EKS cluster
+resource "aws_iam_role" "eks_cluster" {
+  name = "example-eks-cluster"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -49,64 +44,52 @@ resource "aws_iam_role" "ecs_task_execution_role" {
         Action = "sts:AssumeRole"
         Effect = "Allow"
         Principal = {
-          Service = "ecs-tasks.amazonaws.com"
+          Service = "eks.amazonaws.com"
         }
       }
     ]
   })
 }
 
-# Attach the AWS managed policy for ECS task execution role
-resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy_attachment" {
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
-  role       = aws_iam_role.ecs_task_execution_role.name
+# Define the IAM policy for the EKS cluster
+resource "aws_iam_policy" "eks_cluster" {
+  name        = "example-eks-cluster"
+  policy      = data.aws_iam_policy_document.eks_cluster.json
 }
 
-# Create a new  ECS task definition for the web application
-resource "aws_ecs_task_definition" "ecs_task_definition" {
-  family                   = "my-ecs-task"
-  container_definitions    = jsonencode([{
-    name      = "my-web-app"
-    image     = "python:3.8"
-    portMappings = [
-      {
-        containerPort = 8080
-        hostPort      = 8080
-      }
+# Define the IAM policy attachment for the EKS cluster
+resource "aws_iam_role_policy_attachment" "eks_cluster" {
+  policy_arn = aws_iam_policy.eks_cluster.arn
+  role       = aws_iam_role.eks_cluster.name
+}
+
+# Define the data source for the EKS cluster IAM policy document
+data "aws_iam_policy_document" "eks_cluster" {
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "eks:DescribeCluster",
+      "eks:ListClusters",
     ]
-  }])
-  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
-  network_mode             = "awsvpc"
-  requires_compatibilities = ["FARGATE"]
-  memory                   = 512
-  cpu                      = 256
-}
 
-# Create a new  ssecurity group for the ECS tasks
-resource "aws_security_group" "ecs_task_security_group" {
-  name_prefix = "ecs-task-sg-"
-
-  vpc_id = module.vpc.vpc_id
-
-  ingress {
-    from_port   = 8080
-    to_port     = 8080
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    resources = [
+      aws_eks_cluster.example_cluster.arn,
+    ]
   }
 }
 
-resource "aws_ecs_service" "ecs_service" {
-  name            = "my-ecs-service"
-  cluster         = aws_ecs_cluster.ecs_cluster.id
-  task_definition = aws_ecs_task_definition.ecs_task_definition.arn
-  launch_type     = "FARGATE"
+# Define the EKS cluster
+resource "aws_eks_cluster" "example_cluster" {
+  name     = "example-cluster"
+  role_arn = aws_iam_role.eks_cluster.arn
 
-  network_configuration {
-    subnets          = module.vpc.private_subnets
-    security_groups  = [aws_security_group.ecs_task_security_group.id] # Use the ID of the security group
-    assign_public_ip = false
+  vpc_config {
+    subnet_ids = aws_subnet.private.*.id
+    vpc_id     = aws_vpc.example_vpc.id
   }
 
-  depends_on = [aws_ecs_task_definition.ecs_task_definition]
+  depends_on = [
+    aws_iam_role_policy_attachment.eks_cluster,
+  ]
 }
