@@ -19,6 +19,7 @@ provider "kubernetes" {
   config_context_cluster = aws_eks_cluster.example.name
 }
 
+# create deployment
 resource "kubernetes_deployment" "redis" {
   metadata {
     name = "redis"
