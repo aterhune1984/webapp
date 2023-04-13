@@ -19,7 +19,7 @@ provider "kubernetes" {
 }
 
 
-
+# add redis deployment and service
 resource "kubernetes_manifest" "redis-deployment" {
   yaml_body = file("${path.module}/redis-deployment.yaml")
 }
