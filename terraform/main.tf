@@ -21,11 +21,11 @@ provider "kubernetes" {
 
 # add redis deployment and service
 resource "kubernetes_manifest" "redis-deployment" {
-  manifest = file("${path.module}/kubernetes/redis-deployment.yaml")
+  manifest = yamldecode(file("${path.module}/kubernetes/redis-deployment.yaml"))
 }
 
 resource "kubernetes_manifest" "redis-service" {
-  manifest = file("${path.module}/kubernetes/redis-service.yaml")
+  manifest = yamldecode(file("${path.module}/kubernetes/redis-service.yaml"))
 }
 
 resource "aws_vpc" "example" {
