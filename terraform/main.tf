@@ -14,6 +14,10 @@ terraform {
 provider "aws" {
   region = "us-east-2"
 }
+provider "kubernetes" {
+  config_context_cluster = aws_eks_cluster.example.name
+}
+
 
 resource "aws_vpc" "example" {
   cidr_block = "10.0.0.0/16"
