@@ -13,13 +13,12 @@ terraform {
 }
 
 provider "aws" {
-  region = "us-east-2"
+  region = "us-east-1"
 }
 
 resource "aws_eks_cluster" "default" {
   name = "my-eks-cluster"
   version = "1.21"
-  availability_zones = ["us-east-2a", "us-east-2b"]
 
   # The following are optional configuration options.
 
@@ -37,7 +36,11 @@ resource "aws_eks_cluster" "default" {
 
   # The VPC subnets to use for the Kubernetes worker nodes.
   #node_group_subnets = ["subnet-12345678", "subnet-87654321"]
-  role_arn = "arn:aws:iam::213684739071:role/eks-cluster-role"
+
+  vpc_config {
+    vpc_id = "vpc-12345678"
+    subnets = ["subnet-12345678", "subnet-87654321"]
+  }
 }
 
 resource "kubernetes_deployment" "redis" {
@@ -74,4 +77,4 @@ resource "kubernetes_service" "redis" {
     port = 6379
     targetPort = 6379
   }
-}
+}}
