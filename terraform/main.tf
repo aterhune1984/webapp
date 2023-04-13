@@ -16,7 +16,7 @@ provider "aws" {
 }
 
 provider "kubernetes" {
-  config_context_cluster = aws_eks_cluster.example.name
+  config_context_cluster = "example-cluster"
 }
 
 # create deployment
