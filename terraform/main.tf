@@ -25,12 +25,16 @@ resource "aws_vpc" "example_vpc" {
 }
 
 # Define the private subnets for the EKS cluster
+
+
 resource "aws_subnet" "private" {
-  count = 3
-
-  cidr_block = "10.0.${count.index + 1}.0/24"
-
+  count = 2
   vpc_id = aws_vpc.example_vpc.id
+  cidr_block = cidrsubnet(aws_vpc.example_vpc.cidr_block, 4, count.index + 1)
+  availability_zone = data.aws_availability_zones.available.names[count.index]
+  tags = {
+    Name = "${var.cluster_name}-private-${count.index + 1}"
+  }
 }
 
 # Define the IAM role for the EKS cluster
