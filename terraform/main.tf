@@ -1,3 +1,4 @@
+
 terraform {
   required_providers {
     aws = {
@@ -12,86 +13,68 @@ terraform {
 }
 
 provider "aws" {
-  region = "us-east-2"
-}
-provider "kubernetes" {
-  config_context_cluster = aws_eks_cluster.example.name
+  region = "us-east-1"
 }
 
+resource "aws_eks_cluster" "default" {
+  name = "my-eks-cluster"
+  version = "1.21"
 
+  # The following are optional configuration options.
 
-resource "kubernetes_manifest" "redis-deployment" {
-  yaml_body = file("${path.module}/redis-deployment.yaml")
-}
+  # The Kubernetes version to use for the cluster.
+  #kubernetes_version = "1.21"
 
-resource "kubernetes_manifest" "redis-service" {
-  yaml_body = file("${path.module}/redis-service.yaml")
-}
+  # The number of Kubernetes control plane nodes to create.
+  #control_plane_size = 3
 
-resource "aws_vpc" "example" {
-  cidr_block = "10.0.0.0/16"
-  tags = {
-    Name = "example-vpc"
-  }
-}
+  # The number of Kubernetes worker nodes to create.
+  #node_group_count = 3
 
-resource "aws_subnet" "example_a" {
-  vpc_id            = aws_vpc.example.id
-  cidr_block        = "10.0.1.0/24"
-  availability_zone = "us-east-2a"
-  tags = {
-    Name = "example-subnet-a"
-  }
-}
+  # The type of Kubernetes worker nodes to create.
+  #node_group_type = "t2.medium"
 
-resource "aws_subnet" "example_b" {
-  vpc_id            = aws_vpc.example.id
-  cidr_block        = "10.0.2.0/24"
-  availability_zone = "us-east-2b"
-  tags = {
-    Name = "example-subnet-b"
-  }
-}
-
-resource "aws_subnet" "example_c" {
-  vpc_id            = aws_vpc.example.id
-  cidr_block        = "10.0.3.0/24"
-  availability_zone = "us-east-2c"
-  tags = {
-    Name = "example-subnet-c"
-  }
-}
-
-resource "aws_eks_cluster" "example" {
-  name     = "example-cluster"
-  role_arn = aws_iam_role.example.arn
+  # The VPC subnets to use for the Kubernetes worker nodes.
+  #node_group_subnets = ["subnet-12345678", "subnet-87654321"]
 
   vpc_config {
-    subnet_ids = [
-      aws_subnet.example_a.id,
-      aws_subnet.example_b.id,
-      aws_subnet.example_c.id,
-    ]
+    vpc_id = "vpc-12345678"
+    subnets = ["subnet-12345678", "subnet-87654321"]
   }
 }
 
-resource "aws_iam_role" "example" {
-  name               = "example-role"
-  assume_role_policy = jsonencode({
-    Version   = "2012-10-17"
-    Statement = [
-      {
-        Action    = "sts:AssumeRole"
-        Effect    = "Allow"
-        Principal = {
-          Service = "eks.amazonaws.com"
+resource "kubernetes_deployment" "redis" {
+  name = "redis"
+  replicas = 3
+  selector = {
+    app = "redis"
+  }
+  template {
+    metadata {
+      labels = {
+        app = "redis"
+      }
+    }
+    spec {
+      containers {
+        name = "redis"
+        image = "redis:6.2.5"
+        ports {
+          containerPort = 6379
         }
       }
-    ]
-  })
+    }
+  }
 }
 
-resource "aws_iam_role_policy_attachment" "example" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
-  role       = aws_iam_role.example.name
-}
+resource "kubernetes_service" "redis" {
+  name = "redis"
+  type = "LoadBalancer"
+  selector = {
+    app = "redis"
+  }
+  ports {
+    port = 6379
+    targetPort = 6379
+  }
+}}
