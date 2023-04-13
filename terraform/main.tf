@@ -14,6 +14,19 @@ terraform {
 provider "aws" {
   region = "us-east-2"
 }
+provider "kubernetes" {
+  config_context_cluster = aws_eks_cluster.example.name
+}
+
+
+
+resource "kubernetes_manifest" "redis-deployment" {
+  yaml_body = file("${path.module}/redis-deployment.yaml")
+}
+
+resource "kubernetes_manifest" "redis-service" {
+  yaml_body = file("${path.module}/redis-service.yaml")
+}
 
 resource "aws_vpc" "example" {
   cidr_block = "10.0.0.0/16"
