@@ -4,7 +4,7 @@ provider "aws" {
   region = "us-east-2"
 }
 
-resource "aws_eks_cluster" "example_cluster" {
+resource "aws_eks_cluster" "exa mple_cluster" {
   name     = "example-cluster"
   role_arn = aws_iam_role.eks_cluster.arn
 
@@ -57,7 +57,7 @@ resource "aws_subnet" "private0" {
 
   cidr_block = "10.0.1.0/24"
   vpc_id     = aws_vpc.example_vpc.id
-  availability_zone = "use2-az1"
+  availability_zone = "us-east-2a"
 
   tags = {
     Name = "example-private-0"
@@ -68,7 +68,7 @@ resource "aws_subnet" "private1" {
 
   cidr_block = "10.0.2.0/24"
   vpc_id     = aws_vpc.example_vpc.id
-  availability_zone = "use2-az2"
+  availability_zone = "us-east-2b"
 
   tags = {
     Name = "example-private-1"
