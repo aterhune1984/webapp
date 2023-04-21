@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: webapp-svc
+  labels:
+    app: webapp
+spec:
+  ports:
+    - port: 443
+  selector:
+    app: webapp
+    tier: frontend
+  type: LoadBalancer
+---

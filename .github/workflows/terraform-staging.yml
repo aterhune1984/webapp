@@ -2,7 +2,7 @@ name: Staging Terraform Workflow
 
 on:
   pull_request:
-    types: [opened,closed]
+    types: [opened]
     branches:
       - STAGING
     paths:
