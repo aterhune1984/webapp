@@ -1,112 +1,131 @@
-# Copyright (c) HashiCorp, Inc.
-# SPDX-License-Identifier: MPL-2.0
+# Create EKS cluster
+# super basic eks cluster to play with kubernetes,  this is not an ideal configuration, use at your own risk
 
 provider "aws" {
-  region = var.region
+  region = "us-east-2"
 }
 
-data "aws_availability_zones" "available" {}
+resource "aws_eks_cluster" "example_cluster" {
+  name     = "example-cluster"
+  role_arn = aws_iam_role.eks_cluster.arn
 
-locals {
-  cluster_name = "education-eks-${random_string.suffix.result}"
-}
-
-resource "random_string" "suffix" {
-  length  = 8
-  special = false
-}
-
-module "vpc" {
-  source  = "terraform-aws-modules/vpc/aws"
-  version = "3.19.0"
-
-  name = "education-vpc"
-
-  cidr = "10.0.0.0/16"
-  azs  = slice(data.aws_availability_zones.available.names, 0, 3)
-
-  private_subnets = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
-  public_subnets  = ["10.0.4.0/24", "10.0.5.0/24", "10.0.6.0/24"]
-
-  enable_nat_gateway   = true
-  single_nat_gateway   = true
-  enable_dns_hostnames = true
-
-  public_subnet_tags = {
-    "kubernetes.io/cluster/${local.cluster_name}" = "shared"
-    "kubernetes.io/role/elb"                      = 1
+  vpc_config {
+    subnet_ids = [
+      aws_subnet.private0.id,
+      aws_subnet.private1.id
+    ]
   }
 
-  private_subnet_tags = {
-    "kubernetes.io/cluster/${local.cluster_name}" = "shared"
-    "kubernetes.io/role/internal-elb"             = 1
-  }
+  depends_on = [
+    aws_iam_role_policy_attachment.eks_cluster,
+  ]
 }
 
-module "eks" {
-  source  = "terraform-aws-modules/eks/aws"
-  version = "19.5.1"
+# Create IAM role for EKS cluster
+resource "aws_iam_role" "eks_cluster" {
+  name = "eks-cluster"
 
-  cluster_name    = local.cluster_name
-  cluster_version = "1.25"
-
-  vpc_id                         = module.vpc.vpc_id
-  subnet_ids                     = module.vpc.private_subnets
-  cluster_endpoint_public_access = true
-
-  eks_managed_node_group_defaults = {
-    ami_type = "AL2_x86_64"
-
-  }
-
-  eks_managed_node_groups = {
-    one = {
-      name = "node-group-1"
-
-      instance_types = ["t2.small"]
-
-      min_size     = 1
-      max_size     = 3
-      desired_size = 2
-    }
-
-    two = {
-      name = "node-group-2"
-
-      instance_types = ["t2.small"]
-
-      min_size     = 1
-      max_size     = 2
-      desired_size = 1
-    }
-  }
-}
-    
-
-#  https://aws.amazon.com/blogs/containers/amazon-ebs-csi-driver-is-now-generally-available-in-amazon-eks-add-ons/
-data "aws_iam_policy" "ebs_csi_policy" {
-  arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "eks.amazonaws.com"
+        }
+      }
+    ]
+  })
 }
 
-module "irsa-ebs-csi" {
-  source  = "terraform-aws-modules/iam/aws//modules/iam-assumable-role-with-oidc"
-  version = "4.7.0"
-
-  create_role                   = true
-  role_name                     = "AmazonEKSTFEBSCSIRole-${module.eks.cluster_name}"
-  provider_url                  = module.eks.oidc_provider
-  role_policy_arns              = [data.aws_iam_policy.ebs_csi_policy.arn]
-  oidc_fully_qualified_subjects = ["system:serviceaccount:kube-system:ebs-csi-controller-sa"]
+# Attach IAM policy to EKS cluster role
+resource "aws_iam_role_policy_attachment" "eks_cluster" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
+  role       = aws_iam_role.eks_cluster.name
 }
 
-resource "aws_eks_addon" "ebs-csi" {
-  cluster_name             = module.eks.cluster_name
-  addon_name               = "aws-ebs-csi-driver"
-  addon_version            = "v1.17.0-eksbuild.1"
-  service_account_role_arn = module.irsa-ebs-csi.iam_role_arn
+# Create VPC and subnets
+resource "aws_vpc" "example_vpc" {
+  cidr_block = "10.0.0.0/16"
+
   tags = {
-    "eks_addon" = "ebs-csi"
-    "terraform" = "true"
+    Name = "example-vpc"
   }
 }
 
+resource "aws_subnet" "private0" {
+
+  cidr_block = "10.0.1.0/24"
+  vpc_id     = aws_vpc.example_vpc.id
+  availability_zone = "us-east-2a"
+
+  tags = {
+    Name = "example-private-0"
+  }
+}
+
+resource "aws_subnet" "private1" {
+
+  cidr_block = "10.0.2.0/24"
+  vpc_id     = aws_vpc.example_vpc.id
+  availability_zone = "us-east-2b"
+
+  tags = {
+    Name = "example-private-1"
+  }
+}
+# Create worker node group
+resource "aws_eks_node_group" "example_node_group" {
+  cluster_name    = aws_eks_cluster.example_cluster.name
+  node_group_name = "example-node-group"
+  node_role_arn   = aws_iam_role.eks_node_group.arn
+
+  scaling_config {
+    desired_size = 2
+    max_size     = 2
+    min_size     = 2
+  }
+
+  instance_types = ["t3.medium"]
+  subnet_ids     = [aws_subnet.private0.id, aws_subnet.private1.id ]
+
+  depends_on = [
+    aws_iam_role_policy_attachment.eks_node_group,
+  ]
+}
+
+# Create IAM role for worker nodes
+resource "aws_iam_role" "eks_node_group" {
+  name = "eks-node-group"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+# Attach IAM policy to worker node role
+resource "aws_iam_role_policy_attachment" "eks_node_group" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
+  role       = aws_iam_role.eks_node_group.name
+}
+
+# Add additional policies to worker node role as needed
+resource "aws_iam_role_policy_attachment" "eks_node_group_cni" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
+  role       = aws_iam_role.eks_node_group.name
+}
+
+resource "aws_iam_role_policy_attachment" "eks_node_group_ecr" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+  role       = aws_iam_role.eks_node_group.name
+}
