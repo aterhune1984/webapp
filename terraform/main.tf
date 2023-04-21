@@ -5,8 +5,8 @@ resource "aws_eks_cluster" "example_cluster" {
 
   vpc_config {
     subnet_ids = [
-      aws_subnet.private[0].id,
-      aws_subnet.private[1].id
+      aws_subnet.private0.id,
+      aws_subnet.private1.id
     ]
   }
 
@@ -48,7 +48,7 @@ resource "aws_vpc" "example_vpc" {
   }
 }
 
-resource "aws_subnet" "private1" {
+resource "aws_subnet" "private0" {
 
   cidr_block = "10.0.1.0/24"
   vpc_id     = aws_vpc.example_vpc.id
@@ -59,7 +59,7 @@ resource "aws_subnet" "private1" {
   }
 }
 
-resource "aws_subnet" "private2" {
+resource "aws_subnet" "private1" {
 
   cidr_block = "10.0.2.0/24"
   vpc_id     = aws_vpc.example_vpc.id
@@ -82,7 +82,7 @@ resource "aws_eks_node_group" "example_node_group" {
   }
 
   instance_types = ["t3.medium"]
-  subnet_ids     = aws_subnet.private.*.id
+  subnet_ids     = [aws_subnet.private0.id, aws_subnet.private1.id ]
 
   depends_on = [
     aws_iam_role_policy_attachment.eks_node_group,
