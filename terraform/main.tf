@@ -1,4 +1,5 @@
 # Create EKS cluster
+# super basic eks cluster to play with kubernetes,  this is not an ideal configuration, use at your own risk
 
 provider "aws" {
   region = "us-east-2"
