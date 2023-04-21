@@ -1,4 +1,4 @@
 variable "availability_zones" {
   type = list(string)
-  default = ["us-east-2a", "us-east-2b"]
+  default = ["use2-az1", "use2-az2"]
 }
