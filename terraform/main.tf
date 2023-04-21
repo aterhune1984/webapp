@@ -52,7 +52,7 @@ resource "aws_subnet" "private0" {
 
   cidr_block = "10.0.1.0/24"
   vpc_id     = aws_vpc.example_vpc.id
-  availability_zone = var.availability_zones[0]
+  availability_zone = "use2-az1"
 
   tags = {
     Name = "example-private-0"
@@ -63,7 +63,7 @@ resource "aws_subnet" "private1" {
 
   cidr_block = "10.0.2.0/24"
   vpc_id     = aws_vpc.example_vpc.id
-  availability_zone = var.availability_zones[1]
+  availability_zone = "use2-az2"
 
   tags = {
     Name = "example-private-1"
