@@ -1,7 +1,9 @@
+
 # Copyright (c) HashiCorp, Inc.
 # SPDX-License-Identifier: MPL-2.0
 
 terraform {
+
   backend "s3" {
     region = "us-east-2"
     key    = "terraform.tfstate"
@@ -30,4 +32,3 @@ terraform {
 
   required_version = "~> 1.3"
 }
-

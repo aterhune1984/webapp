@@ -1,0 +1,3 @@
+notes:
+
+minikube service webapp --url
