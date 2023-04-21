@@ -1,27 +1,85 @@
-# Create EKS cluster
-# super basic eks cluster to play with kubernetes,  this is not an ideal configuration, use at your own risk
-
+# Declare the provider for AWS
 provider "aws" {
   region = "us-east-2"
 }
 
+# Declare the VPC resource
+resource "aws_vpc" "example_vpc" {
+  cidr_block = "10.0.0.0/16"
+}
+
+# Declare the subnets
+resource "aws_subnet" "example_subnet_a" {
+  vpc_id     = aws_vpc.example_vpc.id
+  cidr_block = "10.0.1.0/24"
+  availability_zone = "us-east-2a"
+}
+
+resource "aws_subnet" "example_subnet_b" {
+  vpc_id     = aws_vpc.example_vpc.id
+  cidr_block = "10.0.2.0/24"
+  availability_zone = "us-east-2b"
+}
+
+# Declare the EKS cluster
 resource "aws_eks_cluster" "example_cluster" {
   name     = "example-cluster"
   role_arn = aws_iam_role.eks_cluster.arn
 
   vpc_config {
     subnet_ids = [
-      aws_subnet.private0.id,
-      aws_subnet.private1.id
+      aws_subnet.example_subnet_a.id,
+      aws_subnet.example_subnet_b.id,
     ]
   }
 
-  depends_on = [
-    aws_iam_role_policy_attachment.eks_cluster,
-  ]
+  depends_on = [aws_iam_role_policy_attachment.eks_cluster]
 }
 
-# Create IAM role for EKS cluster
+# Declare the EKS node group
+# Declare the EKS node group
+resource "aws_eks_node_group" "example_node_group" {
+  cluster_name    = aws_eks_cluster.example_cluster.name
+  node_group_name = "example-node-group"
+  node_role_arn   = aws_iam_role.eks_node.arn
+
+  scaling_config {
+    desired_size = 2
+    max_size     = 2
+    min_size     = 2
+  }
+
+  remote_access {
+    ec2_ssh_key = ""
+    source_security_group_id = aws_security_group.example_sg.id
+  }
+
+  subnet_ids = [
+    aws_subnet.example_subnet_a.id,
+    aws_subnet.example_subnet_b.id,
+  ]
+
+  depends_on = [aws_eks_cluster.example_cluster]
+}
+
+resource "aws_iam_role" "eks_node" {
+  name = "eks-node"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+# Declare the IAM role and policy for the EKS cluster
 resource "aws_iam_role" "eks_cluster" {
   name = "eks-cluster"
 
@@ -39,93 +97,44 @@ resource "aws_iam_role" "eks_cluster" {
   })
 }
 
-# Attach IAM policy to EKS cluster role
+resource "aws_iam_policy" "eks_cluster" {
+  name        = "eks-cluster"
+  path        = "/"
+  policy      = data.aws_iam_policy_document.eks_cluster.json
+}
+
 resource "aws_iam_role_policy_attachment" "eks_cluster" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
+  policy_arn = aws_iam_policy.eks_cluster.arn
   role       = aws_iam_role.eks_cluster.name
 }
 
-# Create VPC and subnets
-resource "aws_vpc" "example_vpc" {
-  cidr_block = "10.0.0.0/16"
-
-  tags = {
-    Name = "example-vpc"
-  }
-}
-
-resource "aws_subnet" "private0" {
-
-  cidr_block = "10.0.1.0/24"
-  vpc_id     = aws_vpc.example_vpc.id
-  availability_zone = "us-east-2a"
-
-  tags = {
-    Name = "example-private-0"
-  }
-}
-
-resource "aws_subnet" "private1" {
-
-  cidr_block = "10.0.2.0/24"
-  vpc_id     = aws_vpc.example_vpc.id
-  availability_zone = "us-east-2b"
-
-  tags = {
-    Name = "example-private-1"
-  }
-}
-# Create worker node group
-resource "aws_eks_node_group" "example_node_group" {
-  cluster_name    = aws_eks_cluster.example_cluster.name
-  node_group_name = "example-node-group"
-  node_role_arn   = aws_iam_role.eks_node_group.arn
-
-  scaling_config {
-    desired_size = 2
-    max_size     = 2
-    min_size     = 2
-  }
-
-  instance_types = ["t3.medium"]
-  subnet_ids     = [aws_subnet.private0.id, aws_subnet.private1.id ]
-
-  depends_on = [
-    aws_iam_role_policy_attachment.eks_node_group,
-  ]
-}
-
-# Create IAM role for worker nodes
-resource "aws_iam_role" "eks_node_group" {
-  name = "eks-node-group"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = {
-          Service = "ec2.amazonaws.com"
-        }
-      }
+data "aws_iam_policy_document" "eks_cluster" {
+  statement {
+    actions = [
+      "eks:DescribeCluster",
     ]
-  })
+    resources = [
+      aws_eks_cluster.example_cluster.arn,
+    ]
+  }
 }
 
-# Attach IAM policy to worker node role
-resource "aws_iam_role_policy_attachment" "eks_node_group" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
-  role       = aws_iam_role.eks_node_group.name
-}
+# Declare the security group for the EKS node group
+resource "aws_security_group" "example_sg" {
+  name_prefix = "example-sg"
+  vpc_id      = aws_vpc.example_vpc.id
 
-# Add additional policies to worker node role as needed
-resource "aws_iam_role_policy_attachment" "eks_node_group_cni" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
-  role       = aws_iam_role.eks_node_group.name
-}
+  ingress {
+    from_port   = 0
+    to_port     = 65535
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 
-resource "aws_iam_role_policy_attachment" "eks_node_group_ecr" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
-  role       = aws_iam_role.eks_node_group.name
+  egress {
+    from_port = 0
+    to_port = 65535
+    protocol = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 }
