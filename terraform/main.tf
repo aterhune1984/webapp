@@ -51,10 +51,12 @@ resource "aws_vpc" "example_vpc" {
 }
 
 resource "aws_subnet" "private" {
-  count = 2
+  count = 4
 
   cidr_block = "10.0.${count.index}.0/24"
   vpc_id     = aws_vpc.example_vpc.id
+  availability_zone = "us-east-2${count.index % 2 + 1}" # alternate between availability zones
+
 
   tags = {
     Name = "example-private-${count.index}"
