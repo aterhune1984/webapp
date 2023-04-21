@@ -1,4 +1,9 @@
 # Create EKS cluster
+
+provider "aws" {
+  region = "us-east-2"
+}
+
 resource "aws_eks_cluster" "example_cluster" {
   name     = "example-cluster"
   role_arn = aws_iam_role.eks_cluster.arn
