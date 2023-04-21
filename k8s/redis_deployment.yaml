@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  labels:
+    tier: database
+spec:
+  replicas: 1
+  minReadySeconds: 1
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: redis
+      tier: database
+  template:
+    metadata:
+      labels:
+        app: redis
+        tier: database
+    spec:
+      containers:
+      - image: redis
+        name: redis
+        env:
+        - name: REDIS_HOST
+          value: redis
+        - name: REDIS_PASSWORD
+          value: foobared
+        command:
+          - redis-server
+        args:
+          - "--requirepass"
+          - "$(REDIS_PASSWORD)"
+        ports:
+        - containerPort: 6379
