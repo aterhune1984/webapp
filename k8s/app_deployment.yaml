@@ -29,6 +29,10 @@ spec:
           value: redis-svc
         ports:
         - containerPort: 8080
+        command:
+          - python
+        args:
+          - "app.py"
 #        volumeMounts:
 #        - name: webapp-persistent-storage
 #          mountPath: /tmp
