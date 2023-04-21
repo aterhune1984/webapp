@@ -1,6 +1,6 @@
-amqp==2.3.2
-billiard==3.5.0.4
-celery==4.2.1
+amqp
+billiard
+celery==4.3.1
 Click==7.0
 dnspython==1.15.0
 eventlet==0.24.1
@@ -9,13 +9,13 @@ Flask-SocketIO==3.0.2
 greenlet
 itsdangerous==0.24
 Jinja2==2.10
-kombu==4.2.1
+kombu
 monotonic==1.5
 python-engineio==2.2.0
 python-socketio==2.0.0
 pytz==2018.5
-redis==2.10.6
+redis
 six==1.11.0
-vine==1.1.4
+vine
 Werkzeug==0.14.1
 MarkupSafe==2.0.1
