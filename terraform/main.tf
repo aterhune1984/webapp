@@ -1,140 +1,111 @@
-# Declare the provider for AWS
+# Copyright (c) HashiCorp, Inc.
+# SPDX-License-Identifier: MPL-2.0
+
 provider "aws" {
-  region = "us-east-2"
+  region = var.region
 }
 
-# Declare the VPC resource
-resource "aws_vpc" "example_vpc" {
-  cidr_block = "10.0.0.0/16"
+data "aws_availability_zones" "available" {}
+
+locals {
+  cluster_name = "education-eks-${random_string.suffix.result}"
 }
 
-# Declare the subnets
-resource "aws_subnet" "example_subnet_a" {
-  vpc_id     = aws_vpc.example_vpc.id
-  cidr_block = "10.0.1.0/24"
-  availability_zone = "us-east-2a"
+resource "random_string" "suffix" {
+  length  = 8
+  special = false
 }
 
-resource "aws_subnet" "example_subnet_b" {
-  vpc_id     = aws_vpc.example_vpc.id
-  cidr_block = "10.0.2.0/24"
-  availability_zone = "us-east-2b"
-}
+module "vpc" {
+  source  = "terraform-aws-modules/vpc/aws"
+  version = "3.19.0"
 
-# Declare the EKS cluster
-resource "aws_eks_cluster" "example_cluster" {
-  name     = "example-cluster"
-  role_arn = aws_iam_role.eks_cluster.arn
+  name = "education-vpc"
 
-  vpc_config {
-    subnet_ids = [
-      aws_subnet.example_subnet_a.id,
-      aws_subnet.example_subnet_b.id,
-    ]
+  cidr = "10.0.0.0/16"
+  azs  = slice(data.aws_availability_zones.available.names, 0, 3)
+
+  private_subnets = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
+  public_subnets  = ["10.0.4.0/24", "10.0.5.0/24", "10.0.6.0/24"]
+
+  enable_nat_gateway   = true
+  single_nat_gateway   = true
+  enable_dns_hostnames = true
+
+  public_subnet_tags = {
+    "kubernetes.io/cluster/${local.cluster_name}" = "shared"
+    "kubernetes.io/role/elb"                      = 1
   }
 
-  depends_on = [aws_iam_role_policy_attachment.eks_cluster]
-}
-
-# Declare the EKS node group
-# Declare the EKS node group
-resource "aws_eks_node_group" "example_node_group" {
-  cluster_name    = aws_eks_cluster.example_cluster.name
-  node_group_name = "example-node-group"
-  node_role_arn   = aws_iam_role.eks_node.arn
-
-  scaling_config {
-    desired_size = 2
-    max_size     = 2
-    min_size     = 2
-  }
-
-  remote_access {
-    ec2_ssh_key = ""
-    source_security_group_id = aws_security_group.example_sg.id
-  }
-
-  subnet_ids = [
-    aws_subnet.example_subnet_a.id,
-    aws_subnet.example_subnet_b.id,
-  ]
-
-  depends_on = [aws_eks_cluster.example_cluster]
-}
-
-resource "aws_iam_role" "eks_node" {
-  name = "eks-node"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = {
-          Service = "ec2.amazonaws.com"
-        }
-      }
-    ]
-  })
-}
-
-# Declare the IAM role and policy for the EKS cluster
-resource "aws_iam_role" "eks_cluster" {
-  name = "eks-cluster"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = {
-          Service = "eks.amazonaws.com"
-        }
-      }
-    ]
-  })
-}
-
-resource "aws_iam_policy" "eks_cluster" {
-  name        = "eks-cluster"
-  path        = "/"
-  policy      = data.aws_iam_policy_document.eks_cluster.json
-}
-
-resource "aws_iam_role_policy_attachment" "eks_cluster" {
-  policy_arn = aws_iam_policy.eks_cluster.arn
-  role       = aws_iam_role.eks_cluster.name
-}
-
-data "aws_iam_policy_document" "eks_cluster" {
-  statement {
-    actions = [
-      "eks:DescribeCluster",
-    ]
-    resources = [
-      aws_eks_cluster.example_cluster.arn,
-    ]
+  private_subnet_tags = {
+    "kubernetes.io/cluster/${local.cluster_name}" = "shared"
+    "kubernetes.io/role/internal-elb"             = 1
   }
 }
 
-# Declare the security group for the EKS node group
-resource "aws_security_group" "example_sg" {
-  name_prefix = "example-sg"
-  vpc_id      = aws_vpc.example_vpc.id
+module "eks" {
+  source  = "terraform-aws-modules/eks/aws"
+  version = "19.5.1"
 
-  ingress {
-    from_port   = 0
-    to_port     = 65535
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+  cluster_name    = local.cluster_name
+  cluster_version = "1.24"
+
+  vpc_id                         = module.vpc.vpc_id
+  subnet_ids                     = module.vpc.private_subnets
+  cluster_endpoint_public_access = true
+
+  eks_managed_node_group_defaults = {
+    ami_type = "AL2_x86_64"
+
   }
 
-  egress {
-    from_port = 0
-    to_port = 65535
-    protocol = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+  eks_managed_node_groups = {
+    one = {
+      name = "node-group-1"
+
+      instance_types = ["t3.small"]
+
+      min_size     = 1
+      max_size     = 3
+      desired_size = 2
+    }
+
+    two = {
+      name = "node-group-2"
+
+      instance_types = ["t3.small"]
+
+      min_size     = 1
+      max_size     = 2
+      desired_size = 1
+    }
+  }
+}
+
+
+# https://aws.amazon.com/blogs/containers/amazon-ebs-csi-driver-is-now-generally-available-in-amazon-eks-add-ons/
+data "aws_iam_policy" "ebs_csi_policy" {
+  arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
+}
+
+module "irsa-ebs-csi" {
+  source  = "terraform-aws-modules/iam/aws//modules/iam-assumable-role-with-oidc"
+  version = "4.7.0"
+
+  create_role                   = true
+  role_name                     = "AmazonEKSTFEBSCSIRole-${module.eks.cluster_name}"
+  provider_url                  = module.eks.oidc_provider
+  role_policy_arns              = [data.aws_iam_policy.ebs_csi_policy.arn]
+  oidc_fully_qualified_subjects = ["system:serviceaccount:kube-system:ebs-csi-controller-sa"]
+}
+
+resource "aws_eks_addon" "ebs-csi" {
+  cluster_name             = module.eks.cluster_name
+  addon_name               = "aws-ebs-csi-driver"
+  addon_version            = "v1.5.2-eksbuild.1"
+  service_account_role_arn = module.irsa-ebs-csi.iam_role_arn
+  tags = {
+    "eks_addon" = "ebs-csi"
+    "terraform" = "true"
   }
 }
