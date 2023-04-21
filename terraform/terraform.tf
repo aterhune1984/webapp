@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: MPL-2.0
 
 terraform {
+
   backend "s3" {
     region = "us-east-2"
     key    = "terraform.tfstate"
@@ -11,6 +12,8 @@ terraform {
     aws = {
       source  = "hashicorp/aws"
       version = "~> 4.47.0"
+      region  = "us-east-2"
+
     }
 
     random = {
