@@ -1,6 +1,6 @@
 # Set provider
 provider "aws" {
-  region = "us-east-1"  # Update with your preferred region
+  region = "us-east-2"  # Update with your preferred region
 }
 
 # Create EKS cluster
