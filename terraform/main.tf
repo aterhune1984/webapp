@@ -48,18 +48,27 @@ resource "aws_vpc" "example_vpc" {
   }
 }
 
-resource "aws_subnet" "private" {
-  count = length(var.availability_zones)
+resource "aws_subnet" "private1" {
 
-  cidr_block = "10.0.${count.index}.0/24"
+  cidr_block = "10.0.1.0/24"
   vpc_id     = aws_vpc.example_vpc.id
-  availability_zone = var.availability_zones[count.index]
+  availability_zone = var.availability_zones[0]
 
   tags = {
-    Name = "example-private-${count.index}"
+    Name = "example-private-0"
   }
 }
 
+resource "aws_subnet" "private2" {
+
+  cidr_block = "10.0.2.0/24"
+  vpc_id     = aws_vpc.example_vpc.id
+  availability_zone = var.availability_zones[1]
+
+  tags = {
+    Name = "example-private-1"
+  }
+}
 # Create worker node group
 resource "aws_eks_node_group" "example_node_group" {
   cluster_name    = aws_eks_cluster.example_cluster.name
