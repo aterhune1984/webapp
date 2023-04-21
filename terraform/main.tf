@@ -1,8 +1,3 @@
-# Set provider
-provider "aws" {
-  region = "us-east-2"  # Update with your preferred region
-}
-
 # Create EKS cluster
 resource "aws_eks_cluster" "example_cluster" {
   name     = "example-cluster"
