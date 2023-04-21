@@ -7,6 +7,8 @@ metadata:
 spec:
   ports:
     - port: 8080
+# if we were doing this on aws change port to 80/443
+#   - port: 80
   selector:
     app: webapp
     tier: frontend
