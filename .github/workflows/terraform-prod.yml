@@ -104,7 +104,7 @@ jobs:
           echo "::set-output name=cluster_name::$(terraform output cluster_name)"
 
   docker-build:
-    needs: terraform
+    needs: build-terraform
     runs-on: ubuntu-latest
 
     steps:
