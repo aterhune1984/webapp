@@ -3,10 +3,10 @@ name: Staging Terraform Workflow
 on:
   pull_request:
     types: [opened]
-    branches:
-      - STAGING
-    paths:
-      - terraform/**
+#    branches:
+#      - master
+#    paths:
+#      - terraform/**
 
 
 env:
@@ -48,7 +48,6 @@ jobs:
         if: github.event_name == 'pull_request' && github.event.action == 'opened'
         id: validate
         run: terraform validate
-
 
       - name: Terraform plan
         id: plan
@@ -95,13 +94,79 @@ jobs:
         run: exit 1
 
       # This step applies the Terraform configuration to the staging environment
-      - name: Terraform apply staging
+      - name: Terraform apply prod
         if: github.event_name == 'pull_request' && github.event.action == 'opened'
-        env:
-          TF_VAR_environment: STAGING
         run: |
           terraform apply -auto-approve "tfplan"
-          echo "::set-output name=apply-successful::true"
+          echo "::set-output name=cluster_endpoint::$(terraform output cluster_endpoint)"
+          echo "::set-output name=cluster_security_group_id::$(terraform output cluster_security_group_id)"
+          echo "::set-output name=region::$(terraform output region)"
+          echo "::set-output name=cluster_name::$(terraform output cluster_name)"
+
+  docker-build:
+    needs: terraform
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: modify code based on image tag
+        id: modify-code
+        run: |
+          # Generate the code based on the image tag
+          sed -i "s|image:.*|image: ${{ secrets.DOCKERHUB_USERNAME }}/webappv2:${{ github.ref }}_${{ github.sha }}|" k8s/app_deployment.yaml 
+          sed -i "s|image:.*|image: ${{ secrets.DOCKERHUB_USERNAME }}/webappv2:${{ github.ref }}_${{ github.sha }}|" k8s/celery_deployment.yaml 
+
+      - name: Log in to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: Build Docker image
+        run: |
+          docker build --platform linux/amd64 -t webappv2 .
+
+      - name: Tag Docker image
+        env:
+          DOCKER_TAG: ${{ secrets.DOCKERHUB_USERNAME }}/webappv2:${{ github.ref }}_${{ github.sha }}
+        run: |
+          docker tag webappv2 $DOCKER_TAG
+
+      - name: Push Docker image to DockerHub
+        run: |
+          docker push $DOCKER_TAG
+
+  kubernetes:
+    needs: build-terraform
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v3
+
+      - name: Install AWS CLI
+        run: |
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          sudo ./aws/install
+
+      - name: Generate kubeconfig
+        env:
+          AWS_REGION: ${{ needs.build-terraform.outputs.region }}
+          CLUSTER_NAME: ${{ needs.build-terraform.outputs.cluster_name }}
+        run: |
+          /usr/local/bin/aws eks --region ${{ env.AWS_REGION }} update-kubeconfig --name ${{ env.CLUSTER_NAME }}
+
+
+      - name: Apply Kubernetes manifests
+        env:
+          KUBECONFIG: ~/.kube/config
+        run: |
+          kubectl apply -f k8s
 
       #- name: Do Integration Tests
       #  if: github.event_name == 'pull_request' && github.event.action == 'opened' && github.base_ref == 'STAGING'
