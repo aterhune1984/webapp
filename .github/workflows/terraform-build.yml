@@ -1,13 +1,7 @@
-name: Staging Terraform Workflow
+name: "Build EKS with terraform"
 
 on:
-  pull_request:
-    types: [opened]
-    branches:
-      - STAGING
-    paths:
-      - terraform/**
-
+  workflow_dispatch:
 
 env:
  # verbosity setting for Terraform logs
@@ -48,7 +42,6 @@ jobs:
         if: github.event_name == 'pull_request' && github.event.action == 'opened'
         id: validate
         run: terraform validate
-
 
       - name: Terraform plan
         id: plan
@@ -95,23 +88,11 @@ jobs:
         run: exit 1
 
       # This step applies the Terraform configuration to the staging environment
-      - name: Terraform apply staging
+      - name: Terraform apply prod
         if: github.event_name == 'pull_request' && github.event.action == 'opened'
-        env:
-          TF_VAR_environment: STAGING
         run: |
           terraform apply -auto-approve "tfplan"
-          echo "::set-output name=apply-successful::true"
-
-      #- name: Do Integration Tests
-      #  if: github.event_name == 'pull_request' && github.event.action == 'opened' && github.base_ref == 'STAGING'
-      #  run: echo "Hello another World"
-
-
-      # This step destroys the Terraform environment upon closing a pull request against the staging branch
-#      - name: Terraform destroy staging
-#        if: github.event_name == 'pull_request' && github.event.action == 'closed'
-#        env:
-#          TF_VAR_environment: STAGING
-#        run: |
-#            terraform destroy -auto-approve
+          echo "::set-output name=cluster_endpoint::$(terraform output cluster_endpoint)"
+          echo "::set-output name=cluster_security_group_id::$(terraform output cluster_security_group_id)"
+          echo "::set-output name=region::$(terraform output region)"
+          echo "::set-output name=cluster_name::$(terraform output cluster_name)"
