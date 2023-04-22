@@ -39,13 +39,11 @@ jobs:
         run: terraform init -backend-config="bucket=$BUCKET_TF_STATE"
 
       - name: Terraform validate
-        if: github.event_name == 'pull_request' && github.event.action == 'opened'
         id: validate
         run: terraform validate
 
       - name: Terraform plan
         id: plan
-        if: github.event_name == 'pull_request' && github.event.action == 'opened'
         run: terraform plan -no-color -input=false -out=tfplan
         continue-on-error: true
 
@@ -58,7 +56,6 @@ jobs:
 
 
       - uses: actions/github-script@v6
-        if: github.event_name == 'pull_request' && github.event.action == 'opened'
         env:
           PLAN: "terraform\n${{ steps.plan.outputs.stdout }}"
         with:
@@ -89,7 +86,6 @@ jobs:
 
       # This step applies the Terraform configuration to the staging environment
       - name: Terraform apply prod
-        if: github.event_name == 'pull_request' && github.event.action == 'opened'
         run: |
           terraform apply -auto-approve "tfplan"
           echo "::set-output name=cluster_endpoint::$(terraform output cluster_endpoint)"
