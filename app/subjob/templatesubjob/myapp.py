@@ -12,6 +12,7 @@ def programkickoff(sessiondata, sid, payload):
     # instanciate your class, passing in flask sessiondata,
     # sid(to know what websocket we are dealing with,
     # and payload from the website form.
+    print('test')
     ts = TemplateSubJob(sessiondata, sid, payload)
     # call the startme function in your class to actually start whatever script you are running.
     ts.startme()

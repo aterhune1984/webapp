@@ -1,38 +1,45 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: webapp
+  name: celery
   labels:
-    tier: frontend
+    tier: backend
 spec:
   replicas: 1
   strategy:
     type: RollingUpdate
   selector:
     matchLabels:
-      app: webapp
-      tier: frontend
+      app: celery
+      tier: backend
   template:
     metadata:
       labels:
-        app: webapp
-        tier: frontend
+        app: celery
+        tier: backend
     spec:
       containers:
       - image: aterhune1984/webappv2:1.0.1
-        name: webapp
+        name: celery
         resources:
           requests:
             cpu: 0.2
         env:
         - name: REDIS_HOST
           value: redis-svc
+        - name: C_FORCE_ROOT
+          value: "true"
+        - name: PYTHONUNBUFFERED
+          value: "1"
         ports:
         - containerPort: 8080
         command:
-          - python
+          - celery
         args:
-          - "app.py"
+          - "-A"
+          - "app.celery"
+          - "worker"
+          - "--loglevel=info"
 #        volumeMounts:
 #        - name: webapp-persistent-storage
 #          mountPath: /tmp
