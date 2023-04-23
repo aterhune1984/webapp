@@ -59,6 +59,8 @@ jobs:
           docker tag webappv2 $DOCKER_TAG
 
       - name: Push Docker image to DockerHub
+        env:
+          DOCKER_TAG: ${{ secrets.DOCKERHUB_USERNAME }}/webappv2:${{ steps.extract_branch_name.outputs.branch_name }}_${{ github.sha }}
         run: |
           docker push $DOCKER_TAG
 
