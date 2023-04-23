@@ -57,7 +57,7 @@ jobs:
         run: |
           export DOCKER_TAG=${{ secrets.DOCKERHUB_USERNAME }}/webappv2:${{ steps.extract_branch_name.outputs.branch_name }}_${{ github.sha }}
           docker tag webappv2 $DOCKER_TAG
-          echo "export DOCKER_TAG=$(echo $DOCKER_TAG)" >> $GITHUB_ENV
+          echo "DOCKER_TAG=$(echo $DOCKER_TAG)" >> $GITHUB_ENV
 
       - name: Push Docker image to DockerHub
         run: |
