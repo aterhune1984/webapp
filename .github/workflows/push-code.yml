@@ -72,6 +72,23 @@ jobs:
       - name: checkout code
         uses: actions/checkout@v3
 
+      - name: Setup Terraform with specified version on the runner
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.4.4
+
+      - name: Terraform init
+        id: init
+        run: terraform init -backend-config="bucket=$BUCKET_TF_STATE"
+
+      - name: Terraform set vars
+        id: terraform
+        run: |
+          echo "::set-output name=cluster_endpoint::$(terraform output cluster_endpoint)"
+          echo "::set-output name=cluster_security_group_id::$(terraform output cluster_security_group_id)"
+          echo "::set-output name=region::$(terraform output region)"
+          echo "::set-output name=cluster_name::$(terraform output cluster_name)"
+
       - name: Install AWS CLI
         run: |
           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
@@ -80,8 +97,8 @@ jobs:
 
       - name: Generate kubeconfig
         env:
-          AWS_REGION: ${{ needs.build-terraform.outputs.region }}
-          CLUSTER_NAME: ${{ needs.build-terraform.outputs.cluster_name }}
+          AWS_REGION: ${{ needs.terraform.outputs.region }}
+          CLUSTER_NAME: ${{ needs.terraform.outputs.cluster_name }}
         run: |
           /usr/local/bin/aws eks --region ${{ env.AWS_REGION }} update-kubeconfig --name ${{ env.CLUSTER_NAME }}
 
