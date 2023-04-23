@@ -10,7 +10,6 @@ on:
     types: [opened]
     branches:
       - STAGING
-      - master
     paths-ignore:
       - 'terraform/**'
 
