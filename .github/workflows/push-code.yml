@@ -45,3 +45,21 @@ jobs:
       - name: Apply Kubernetes manifests
         run: |
           kubectl apply -f k8s
+
+      - name: Get service URL
+        run: |
+          kubectl get service webapp-svc -o jsonpath='{.status.loadBalancer.ingress[0].hostname}:{.spec.ports[0].port}'
+        id: get_service_url
+
+      - name: Comment on pull request
+        if: always()
+        uses: actions/github-script@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `Service URL: ${steps.get_service_url.outputs.stdout}`
+            })
