@@ -1,6 +1,7 @@
 name: "push to kubernetes"
 
 # any time you modify k8s directory files, this updates and pushes
+
 on:
   pull_request:
     types: [opened]
@@ -8,6 +9,7 @@ on:
       - STAGING
     paths:
       - 'k8s/**'
+
 
 env:
  # verbosity setting for Terraform logs
@@ -21,7 +23,9 @@ env:
 
 jobs:
 
+
   kubernetes:
+
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -64,3 +68,4 @@ jobs:
               repo: context.repo.repo,
               body: `Service URL: ${serviceUrl}`
             })
+

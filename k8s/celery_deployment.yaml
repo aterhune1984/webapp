@@ -20,6 +20,7 @@ spec:
     spec:
       containers:
       - image: aterhune1984/webappv2:_915da1073347c498b94cca7a8c93d1e4fdfed867
+
         name: celery
         resources:
           requests:
