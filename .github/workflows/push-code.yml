@@ -1,0 +1,89 @@
+name: "update image and kubernetes"
+
+
+#    branches:
+#      - master
+#    paths:
+#      - terraform/**
+on:
+  push:
+    branches:
+      - STAGING
+      - master
+    paths-ignore:
+      - 'terraform/**'
+
+env:
+ # verbosity setting for Terraform logs
+ TF_LOG: INFO
+ # Credentials for deployment to AWS
+ AWS_ACCESS_KEY_ID: ${{ secrets.AWS_PROD_USER }}
+ AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_PROD_KEY }}
+ # S3 bucket for the Terraform state
+ BUCKET_TF_STATE: ${{ secrets.BUCKET_TF_STATE}}
+
+
+jobs:
+  docker-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: modify code based on image tag
+        id: modify-code
+        run: |
+          # Generate the code based on the image tag
+          sed -i "s|image:.*|image: ${{ secrets.DOCKERHUB_USERNAME }}/webappv2:${{ github.ref }}_${{ github.sha }}|" k8s/app_deployment.yaml 
+          sed -i "s|image:.*|image: ${{ secrets.DOCKERHUB_USERNAME }}/webappv2:${{ github.ref }}_${{ github.sha }}|" k8s/celery_deployment.yaml 
+
+      - name: Log in to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: Build Docker image
+        run: |
+          docker build --platform linux/amd64 -t webappv2 .
+
+      - name: Tag Docker image
+        env:
+          DOCKER_TAG: ${{ secrets.DOCKERHUB_USERNAME }}/webappv2:${{ github.ref }}_${{ github.sha }}
+        run: |
+          docker tag webappv2 $DOCKER_TAG
+
+      - name: Push Docker image to DockerHub
+        run: |
+          docker push $DOCKER_TAG
+
+  kubernetes:
+    needs: docker-build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v3
+
+      - name: Install AWS CLI
+        run: |
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          sudo ./aws/install
+
+      - name: Generate kubeconfig
+        env:
+          AWS_REGION: ${{ needs.build-terraform.outputs.region }}
+          CLUSTER_NAME: ${{ needs.build-terraform.outputs.cluster_name }}
+        run: |
+          /usr/local/bin/aws eks --region ${{ env.AWS_REGION }} update-kubeconfig --name ${{ env.CLUSTER_NAME }}
+
+
+      - name: Apply Kubernetes manifests
+        env:
+          KUBECONFIG: ~/.kube/config
+        run: |
+          kubectl apply -f k8s
