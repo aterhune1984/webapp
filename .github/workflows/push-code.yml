@@ -50,7 +50,7 @@ jobs:
 
       - name: Tag Docker image
         env:
-          DOCKER_TAG: ${{ env.DOCKERHUB_USERNAME }}/webappv2:${{ github.ref }}_${{ github.sha }}
+          DOCKER_TAG: ${{ secrets.DOCKERHUB_USERNAME }}/webappv2:${{ bash 'basename $GITHUB_REF' }}_${{ github.sha }}
         run: |
           docker tag webappv2 $DOCKER_TAG
 
