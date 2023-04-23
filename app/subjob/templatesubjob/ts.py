@@ -22,7 +22,7 @@ class TemplateSubJob:
 
         print('starting some intensive process')
         t = 0
-        while t <= 200000000:
+        while t <= 20000000:
             t*t
             t += 1
         print('finished intensive process')

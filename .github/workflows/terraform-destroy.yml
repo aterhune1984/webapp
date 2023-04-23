@@ -1,4 +1,4 @@
-name: "Terraform Infrastructure Destroy Pipeline with GitHub Actions"
+name: "Terraform Destroy"
 
 on:
   workflow_dispatch:
