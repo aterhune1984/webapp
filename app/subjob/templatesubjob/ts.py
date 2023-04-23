@@ -19,7 +19,7 @@ class TemplateSubJob:
 
     def startme(self):
         # i am running some code now...
-
+        print('hello world!')
         print('starting some intensive process')
         t = 0
         while t <= 200000000:
