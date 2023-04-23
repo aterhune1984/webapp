@@ -19,8 +19,7 @@ spec:
         tier: frontend
     spec:
       containers:
-      - image: aterhune1984/webappv2:_915da1073347c498b94cca7a8c93d1e4fdfed867
-
+      - image: aterhune1984/webappv2:_8371d5935eb24bb7d9b50e171b5bb2833bb2332d
         name: webapp
         resources:
           requests:
