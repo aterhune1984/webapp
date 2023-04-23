@@ -1,4 +1,4 @@
-name: "update image and kubernetes"
+name: "push to kubernetes"
 
 # any time you modify k8s directory files, this updates and pushes
 on:
