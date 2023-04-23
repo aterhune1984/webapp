@@ -6,7 +6,7 @@ name: "update image and kubernetes"
 #    paths:
 #      - terraform/**
 on:
-  push:
+  pull-request:
     branches:
       - STAGING
       - master
