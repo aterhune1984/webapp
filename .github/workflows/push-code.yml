@@ -6,10 +6,10 @@ name: "update image and kubernetes"
 #    paths:
 #      - terraform/**
 on:
-  push:
+  pull_request:
+    types: [opened]
     branches:
       - STAGING
-      - master
     paths-ignore:
       - 'terraform/**'
 
@@ -31,17 +31,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Extract branch name
+        run: echo ${{ github.ref }}
+        id: extract_branch_name
+
       - name: modify code based on image tag
         id: modify-code
         run: |
           # Generate the code based on the image tag
-          sed -i "s|image:.*|image: ${{ env.DOCKERHUB_USERNAME }}/webappv2:${{ github.ref }}_${{ github.sha }}|" k8s/app_deployment.yaml 
-          sed -i "s|image:.*|image: ${{ env.DOCKERHUB_USERNAME }}/webappv2:${{ github.ref }}_${{ github.sha }}|" k8s/celery_deployment.yaml 
+          sed -i "s|image:.*|image: ${{ secrets.DOCKERHUB_USERNAME }}/webappv2:${{ github.ref }}_${{ github.sha }}|" k8s/app_deployment.yaml 
+          sed -i "s|image:.*|image: ${{ secrets.DOCKERHUB_USERNAME }}/webappv2:${{ github.ref }}_${{ github.sha }}|" k8s/celery_deployment.yaml 
 
       - name: Log in to DockerHub
         uses: docker/login-action@v1
         with:
-          username: ${{ env.DOCKERHUB_USERNAME }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
       - name: Build Docker image
@@ -49,13 +53,13 @@ jobs:
           docker build --platform linux/amd64 -t webappv2 .
 
       - name: Tag Docker image
-        env:
-          DOCKER_TAG: ${{ env.DOCKERHUB_USERNAME }}/webappv2:${{ github.ref }}_${{ github.sha }}
         run: |
+          export DOCKER_TAG=${{ secrets.DOCKERHUB_USERNAME }}/webappv2:${{ steps.extract_branch_name.outputs.branch_name }}_${{ github.sha }}
           docker tag webappv2 $DOCKER_TAG
 
       - name: Push Docker image to DockerHub
         run: |
+          export DOCKER_TAG=${{ secrets.DOCKERHUB_USERNAME }}/webappv2:${{ steps.extract_branch_name.outputs.branch_name }}_${{ github.sha }}
           docker push $DOCKER_TAG
 
   kubernetes:
@@ -72,18 +76,14 @@ jobs:
         run: |
           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
           unzip awscliv2.zip
-          sudo ./aws/install
+          sudo ./aws/install --update
 
       - name: Generate kubeconfig
-        env:
-          AWS_REGION: ${{ needs.build-terraform.outputs.region }}
-          CLUSTER_NAME: ${{ needs.build-terraform.outputs.cluster_name }}
         run: |
-          /usr/local/bin/aws eks --region ${{ env.AWS_REGION }} update-kubeconfig --name ${{ env.CLUSTER_NAME }}
-
+          export CLUSTER_NAME=$(/usr/local/bin/aws eks --region us-east-2 list-clusters --output text --query 'clusters[0]')
+          echo $CLUSTER_NAME
+          /usr/local/bin/aws eks --region us-east-2 update-kubeconfig --name $CLUSTER_NAME
 
       - name: Apply Kubernetes manifests
-        env:
-          KUBECONFIG: ~/.kube/config
         run: |
           kubectl apply -f k8s
