@@ -53,16 +53,14 @@ jobs:
           docker build --platform linux/amd64 -t webappv2 .
 
       - name: Tag Docker image
-        env:
-          DOCKER_TAG: ${{ secrets.DOCKERHUB_USERNAME }}/webappv2:${{ steps.extract_branch_name.outputs.branch_name }}_${{ github.sha }}
         run: |
-          docker tag webappv2 ${{ DOCKER_TAG }}
+          export DOCKER_TAG=${{ secrets.DOCKERHUB_USERNAME }}/webappv2:${{ steps.extract_branch_name.outputs.branch_name }}_${{ github.sha }}
+          docker tag webappv2 $DOCKER_TAG
 
       - name: Push Docker image to DockerHub
-        env:
-          DOCKER_TAG: ${{ secrets.DOCKERHUB_USERNAME }}/webappv2:${{ steps.extract_branch_name.outputs.branch_name }}_${{ github.sha }}
         run: |
-          docker push ${{ DOCKER_TAG }}
+          export DOCKER_TAG=${{ secrets.DOCKERHUB_USERNAME }}/webappv2:${{ steps.extract_branch_name.outputs.branch_name }}_${{ github.sha }}
+          docker push $DOCKER_TAG
 
   kubernetes:
     needs: docker-build
