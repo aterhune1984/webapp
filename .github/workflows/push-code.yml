@@ -85,7 +85,5 @@ jobs:
           /usr/local/bin/aws eks --region us-east-2 update-kubeconfig --name $CLUSTER_NAME
 
       - name: Apply Kubernetes manifests
-        env:
-          KUBECONFIG: ~/.kube/config
         run: |
           kubectl apply -f k8s
