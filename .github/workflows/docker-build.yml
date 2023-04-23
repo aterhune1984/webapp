@@ -1,0 +1,82 @@
+name: "update image and kubernetes"
+
+
+# this runs any time any of the codebase outside terraform and kubernetes is updated
+# it builds a new image and tells you the image name, so you
+# can update the k8s deployment with the necessary info
+
+on:
+  pull_request:
+    types: [opened]
+    branches:
+      - STAGING
+    paths-ignore:
+      - 'terraform/**'
+      - 'k8s/**'
+
+env:
+ # verbosity setting for Terraform logs
+ TF_LOG: INFO
+ # Credentials for deployment to AWS
+ AWS_ACCESS_KEY_ID: ${{ secrets.AWS_PROD_USER }}
+ AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_PROD_KEY }}
+ # S3 bucket for the Terraform state
+ BUCKET_TF_STATE: ${{ secrets.BUCKET_TF_STATE}}
+
+
+jobs:
+  docker-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Extract branch name
+        run: echo ${{ github.ref }}
+        id: extract_branch_name
+
+#      - name: modify code based on image tag
+#        id: modify-code
+#        run: |
+#          # Generate the code based on the image tag
+#          sed -i "s|image:.*|image: ${{ secrets.DOCKERHUB_USERNAME }}/webappv2:${{ github.ref }}_${{ github.sha }}|" k8s/app_deployment.yaml
+#          sed -i "s|image:.*|image: ${{ secrets.DOCKERHUB_USERNAME }}/webappv2:${{ github.ref }}_${{ github.sha }}|" k8s/celery_deployment.yaml
+
+      - name: Log in to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: Build Docker image
+        run: |
+          docker build --platform linux/amd64 -t webappv2 .
+
+      - name: Tag Docker image
+        run: |
+          export DOCKER_TAG=${{ secrets.DOCKERHUB_USERNAME }}/webappv2:${{ steps.extract_branch_name.outputs.branch_name }}_${{ github.sha }}
+          docker tag webappv2 $DOCKER_TAG
+
+      - name: Push Docker image to DockerHub
+        run: |
+          export DOCKER_TAG=${{ secrets.DOCKERHUB_USERNAME }}/webappv2:${{ steps.extract_branch_name.outputs.branch_name }}_${{ github.sha }}
+          docker push $DOCKER_TAG
+
+      - name: Print DOCKER_TAG variable
+        if: always()
+        run: |
+          echo "Docker image tag: ${{ env.DOCKER_TAG }}"
+
+      - name: Comment on pull request
+        if: always()
+        uses: actions/github-script@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `Docker image tag: ${process.env.DOCKER_TAG}`
+            })

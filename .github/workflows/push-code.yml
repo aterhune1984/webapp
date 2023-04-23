@@ -1,17 +1,13 @@
 name: "update image and kubernetes"
 
-
-#    branches:
-#      - master
-#    paths:
-#      - terraform/**
+# any time you modify k8s directory files, this updates and pushes
 on:
   pull_request:
     types: [opened]
     branches:
       - STAGING
-    paths-ignore:
-      - 'terraform/**'
+    paths:
+      - 'k8s/**'
 
 env:
  # verbosity setting for Terraform logs
@@ -24,46 +20,8 @@ env:
 
 
 jobs:
-  docker-build:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Extract branch name
-        run: echo ${{ github.ref }}
-        id: extract_branch_name
-
-      - name: modify code based on image tag
-        id: modify-code
-        run: |
-          # Generate the code based on the image tag
-          sed -i "s|image:.*|image: ${{ secrets.DOCKERHUB_USERNAME }}/webappv2:${{ github.ref }}_${{ github.sha }}|" k8s/app_deployment.yaml 
-          sed -i "s|image:.*|image: ${{ secrets.DOCKERHUB_USERNAME }}/webappv2:${{ github.ref }}_${{ github.sha }}|" k8s/celery_deployment.yaml 
-
-      - name: Log in to DockerHub
-        uses: docker/login-action@v1
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
-
-      - name: Build Docker image
-        run: |
-          docker build --platform linux/amd64 -t webappv2 .
-
-      - name: Tag Docker image
-        run: |
-          export DOCKER_TAG=${{ secrets.DOCKERHUB_USERNAME }}/webappv2:${{ steps.extract_branch_name.outputs.branch_name }}_${{ github.sha }}
-          docker tag webappv2 $DOCKER_TAG
-
-      - name: Push Docker image to DockerHub
-        run: |
-          export DOCKER_TAG=${{ secrets.DOCKERHUB_USERNAME }}/webappv2:${{ steps.extract_branch_name.outputs.branch_name }}_${{ github.sha }}
-          docker push $DOCKER_TAG
 
   kubernetes:
-    needs: docker-build
     runs-on: ubuntu-latest
     defaults:
       run:
