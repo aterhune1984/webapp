@@ -80,7 +80,7 @@ jobs:
 
       - name: Generate kubeconfig
         run: |
-          export CLUSTER_NAME=$(/usr/local/bin/aws eks list-clusters --output text --query 'clusters[0]')
+          export CLUSTER_NAME=$(/usr/local/bin/aws eks --region us-east-2 list-clusters --output text --query 'clusters[0]')
           /usr/local/bin/aws eks --region us-east-2 update-kubeconfig --name $CLUSTER_NAME
 
       - name: Apply Kubernetes manifests
