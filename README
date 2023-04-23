@@ -1,3 +1,20 @@
 notes:
 
 minikube service webapp --url
+
+About:
+
+This is a simple website that kicks off scripts (placed in ./app/subjob/) and runs those scripts on
+celery workers while sending output back to the web browser in real time using websockets
+
+This is intended to be deployed in kubernetes
+Github workflows are as follows:
+
+Terraform EKS cluster manually built / destroyed
+
+Any code changes  > docker-build.yml
+# it builds a new image and tells you the image name, so you
+# can update the k8s deployment with the necessary info
+
+k8s directory changes > push-code.yml
+# does kubectl apply to the k8s directory and tells you the Url that the tool is using.
