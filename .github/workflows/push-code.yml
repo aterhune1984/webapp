@@ -31,6 +31,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Extract branch name
+        run: echo ${{ github.ref }}
+        id: extract_branch_name
+
       - name: modify code based on image tag
         id: modify-code
         run: |
@@ -50,7 +54,7 @@ jobs:
 
       - name: Tag Docker image
         env:
-          DOCKER_TAG: ${{ secrets.DOCKERHUB_USERNAME }}/webappv2:${{ bash 'basename $GITHUB_REF' }}_${{ github.sha }}
+          DOCKER_TAG: ${{ secrets.DOCKERHUB_USERNAME }}/webappv2:${{ steps.extract_branch_name.outputs.branch_name }}_${{ github.sha }}
         run: |
           docker tag webappv2 $DOCKER_TAG
 
