@@ -3,6 +3,8 @@ name: "push to kubernetes"
 # any time you modify k8s directory files, this updates and pushes
 on:
   pull_request:
+    branches:
+      - STAGING
     types: [opened]
     paths:
       - 'k8s/**'
