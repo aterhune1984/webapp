@@ -4,6 +4,8 @@ name: "push to kubernetes"
 
 on:
   pull_request:
+    branches:
+      - STAGING
     types: [opened]
     paths:
       - 'k8s/**'

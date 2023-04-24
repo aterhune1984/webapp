@@ -7,8 +7,11 @@ name: "update image"
 
 on:
   pull_request:
+    branches:
+      - STAGING
     types: [opened]
     paths-ignore:
+      - '.github/**'
       - 'terraform/**'
       - 'k8s/**'
 
