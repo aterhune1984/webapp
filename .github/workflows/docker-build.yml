@@ -11,6 +11,7 @@ on:
       - STAGING
     types: [opened]
     paths-ignore:
+      - '.github/**'
       - 'terraform/**'
       - 'k8s/**'
 
