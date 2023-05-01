@@ -2,6 +2,7 @@
 .idea/
 # Ignore all directories with .terraform in their name
 **/.terraform*/
+**/.teraform.lock.acl
 
 # Ignore all .tfstate files
 *.tfstate
