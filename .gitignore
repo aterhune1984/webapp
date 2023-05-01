@@ -6,7 +6,7 @@
 # Ignore all .tfstate files
 *.tfstate
 *.tfstate.*
-
+terraform/ec2/.terraform.lock.hcl
 # Ignore .terraformrc
 .terraformrc
 
