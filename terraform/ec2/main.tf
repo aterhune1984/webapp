@@ -45,7 +45,6 @@ resource "aws_route_table" "public_route" {
   tags = {
     Name = "ec2_kubernetes_public"
   }
-  depends_on = [aws_route_table.public_route]
 }
 
 resource "aws_subnet" "private" {
@@ -58,6 +57,12 @@ resource "aws_subnet" "private" {
     "kubernetes.io/cluster/${var.cluster_name}" = "owned",
     "kubernetes.io/role/internal-elb" = 1
   }
+}
+
+resource "aws_route_table_association" "private_association" {
+  subnet_id      = aws_subnet.private.id
+  route_table_id = aws_route_table.private_route.id
+  depends_on     = [aws_route_table.private_route, aws_subnet.private]
 }
 
 resource "aws_subnet" "public" {
@@ -75,6 +80,7 @@ resource "aws_subnet" "public" {
 resource "aws_route_table_association" "public_association" {
   subnet_id      = aws_subnet.public.id
   route_table_id = aws_route_table.public_route.id
+  depends_on     = [aws_route_table.public_route, aws_subnet.public]
 }
 
 
@@ -103,8 +109,6 @@ resource "aws_nat_gateway" "private_natgw" {
     Name = "gw NAT"
   }
 
-  # To ensure proper ordering, it is recommended to add an explicit dependency
-  # on the Internet Gateway for the VPC.
   depends_on = [aws_internet_gateway.gw, aws_eip.nat_eip]
 }
 
@@ -163,6 +167,11 @@ data "aws_iam_policy_document" "instance_assume_role_policy" {
       identifiers = ["ec2.amazonaws.com"]
     }
   }
+}
+
+resource "aws_iam_instance_profile" "k8smaster_policy" {
+  name = "k8smaster_policy"
+  role = aws_iam_role.k8smaster_role.name
 }
 
 resource "aws_iam_role" "k8smaster_role" {
@@ -422,25 +431,62 @@ resource "aws_iam_role" "k8snode_role" {
 
 }
 
-resource "aws_instance" "ami_build_instance" {
+resource "aws_security_group" "k8s-master" {
+  name        = "k8s-master"
+  description = "Kubernetes Master Hosts"
+  vpc_id      = aws_vpc.main.id
+
+  ingress {
+    description      = "ssh to k8s-master"
+    from_port        = 22
+    to_port          = 22
+    protocol         = "tcp"
+    security_groups  = [aws_security_group.bastion_ssh.id]
+  }
+
+  egress {
+    from_port        = 0
+    to_port          = 0
+    protocol         = "-1"
+    cidr_blocks      = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
+  }
+
+}
+
+resource "aws_instance" "kubernetes_master" {
   instance_type = "t2.micro"
+  private_ip = "10.0.0.11"
+  key_name = var.key_name
+  vpc_security_group_ids = [aws_security_group.k8s-master.id]
+  credit_specification {cpu_credits = "unlimited"}
+  iam_instance_profile = aws_iam_instance_profile.k8smaster_policy.name
+  subnet_id = aws_subnet.private.id
   ami           = data.aws_ami.ubuntu.id
   user_data     = <<-EOF
     #!/bin/bash
-    printf "[Service]\nExecStartPost=/sbin/iptables -P FORWARD ACCEPT" |   sudo tee /etc/systemd/system/docker.service.d/10-iptables.conf
-    apt-get install -y docker.io
+    snap install docker
+    wget https://github.com/containerd/containerd/releases/download/v1.6.12/containerd-1.6.12-linux-amd64.tar.gz
+    tar xvf containerd-1.6.12-linux-amd64.tar.gz
+    systemctl stop containerd
+    cd bin
+    cp * /usr/bin/
+    systemctl enable containerd
+    systemctl start containerd
+    mkdir /etc/systemd/system/docker.service.d
+    printf "[Service]\nExecStartPost=/sbin/iptables -P FORWARD ACCEPT" | tee /etc/systemd/system/docker.service.d/10-iptables.conf
     docker version
-    curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+    curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
     apt-add-repository 'deb http://apt.kubernetes.io/ kubernetes-xenial main'
     apt-get update
     apt-get install -y kubelet kubeadm kubectl
+    hostnamectl set-hostname $(curl http://169.254.169.254/latest/meta-data/hostname)
+    printf "[Service]\nEnvironment=\"KUBELET_EXTRA_ARGS=--node-ip=$(curl http://169.254.169.254/latest/meta-data/local-ipv4)\"" | tee /etc/systemd/system/kubelet.service.d/20-aws.conf
+    systemctl daemon-reload
+    systemctl restart kubelet
+
     EOF
   tags = {
-    Name = "ami_build_instance"
+    Name = "kubernetes_master"
   }
-}
-
-resource "aws_ami_from_instance" "kube_ami"{
-  name = "kube_ami"
-  source_instance_id = aws_instance.ami_build_instance.id
 }
