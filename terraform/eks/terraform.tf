@@ -4,10 +4,15 @@
 
 terraform {
 
+
   backend "s3" {
+    bucket = "webapp.eks.bucket"
     region = "us-east-2"
-    key    = "terraform.tfstate"
+    key    = "webapp_terraform.tfstate"
+    dynamodb_table = "webapp-eks-terraform-state-lock-table"
+    encrypt = true
   }
+
   required_providers {
     aws = {
       source  = "hashicorp/aws"

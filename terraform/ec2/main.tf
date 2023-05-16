@@ -20,6 +20,21 @@ data "aws_ami" "ubuntu" {
   owners = ["099720109477"] # Canonical owner ID
 }
 
+data "aws_ami" "amazon-linux-2" {
+ most_recent = true
+
+
+ filter {
+   name   = "owner-alias"
+   values = ["amazon"]
+ }
+
+
+ filter {
+   name   = "name"
+   values = ["amzn2-ami-hvm*"]
+ }
+}
 
 resource "aws_vpc" "main" {
   cidr_block       = "10.0.0.0/16"
@@ -157,6 +172,7 @@ resource "aws_instance" "bastion" {
     Name = "bastion"
   }
 }
+
 
 data "aws_iam_policy_document" "instance_assume_role_policy" {
   statement {
@@ -444,6 +460,96 @@ resource "aws_security_group" "k8s-master" {
     security_groups  = [aws_security_group.bastion_ssh.id]
   }
 
+  ingress {
+    description      = "Kubernetes API server"
+    from_port        = 6443
+    to_port          = 6443
+    protocol         = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description      = "etcd server client API"
+    from_port        = 2379
+    to_port          = 2380
+    protocol         = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description      = "Kubelet API"
+    from_port        = 10250
+    to_port          = 10250
+    protocol         = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  ingress {
+    description      = "kube-scheduler"
+    from_port        = 10259
+    to_port          = 10259
+    protocol         = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  ingress {
+    description      = "kube-controller-manager"
+    from_port        = 10257
+    to_port          = 10257
+    protocol         = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  ingress {
+    description      = "Cluster-Wide Network - Flannel VXLAN"
+    from_port        = 8472
+    to_port          = 8472
+    protocol         = "udp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  egress {
+    from_port        = 0
+    to_port          = 0
+    protocol         = "-1"
+    cidr_blocks      = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
+  }
+
+}
+
+resource "aws_security_group" "k8s-worker" {
+  name        = "k8s-worker"
+  description = "Kubernetes Worker Hosts"
+  vpc_id      = aws_vpc.main.id
+
+  ingress {
+    description      = "ssh to k8s-worker"
+    from_port        = 22
+    to_port          = 22
+    protocol         = "tcp"
+    security_groups  = [aws_security_group.bastion_ssh.id]
+  }
+
+  ingress {
+    description      = "NodePort Services"
+    from_port        = 30000
+    to_port          = 32767
+    protocol         = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description      = "Kubelet API"
+    from_port        = 10250
+    to_port          = 10250
+    protocol         = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description      = "Cluster-Wide Network - Flannel VXLAN"
+    from_port        = 8472
+    to_port          = 8472
+    protocol         = "udp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
   egress {
     from_port        = 0
     to_port          = 0
@@ -466,14 +572,12 @@ resource "aws_instance" "kubernetes_master" {
   user_data     = <<-EOF
     #!/bin/bash
     snap install docker
+    mkdir -p /usr/local/lib/systemd/system/
     wget https://github.com/containerd/containerd/releases/download/v1.6.12/containerd-1.6.12-linux-amd64.tar.gz
-    tar xvf containerd-1.6.12-linux-amd64.tar.gz
-    systemctl stop containerd
-    cd bin
-    cp * /usr/bin/
-    systemctl enable containerd
-    systemctl start containerd
-    mkdir /etc/systemd/system/docker.service.d
+    tar Cxzvf /usr/local containerd-1.6.12-linux-amd64.tar.gz
+    wget https://raw.githubusercontent.com/containerd/containerd/main/containerd.service -O /usr/local/lib/systemd/system/containerd.service
+    systemctl daemon-reload
+    systemctl enable --now containers
     printf "[Service]\nExecStartPost=/sbin/iptables -P FORWARD ACCEPT" | tee /etc/systemd/system/docker.service.d/10-iptables.conf
     docker version
     curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
@@ -484,7 +588,6 @@ resource "aws_instance" "kubernetes_master" {
     printf "[Service]\nEnvironment=\"KUBELET_EXTRA_ARGS=--node-ip=$(curl http://169.254.169.254/latest/meta-data/local-ipv4)\"" | tee /etc/systemd/system/kubelet.service.d/20-aws.conf
     systemctl daemon-reload
     systemctl restart kubelet
-
     EOF
   tags = {
     Name = "kubernetes_master"
