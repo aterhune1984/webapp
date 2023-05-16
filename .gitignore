@@ -1,2 +1,27 @@
+
 .idea/
-terraform/.terraform
+# Ignore all directories with .terraform in their name
+**/.terraform*/
+**/.terraform.lock.acl
+# Ignore all .tfstate files
+*.tfstate
+*.tfstate.*
+terraform/ec2/.terraform.lock.hcl
+# Ignore .terraformrc
+.terraformrc
+
+# Ignore override files as they are usually used to override resources locally and not checked in
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Ignore CLI configuration files
+*.terraform.d/*
+
+# Ignore crash log files
+crash.log
+
+# Ignore any .tfplan files
+*.tfplan
+
