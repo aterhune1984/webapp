@@ -33,11 +33,11 @@ spec:
           - python
         args:
           - "app.py"
-#        volumeMounts:
-#        - name: webapp-persistent-storage
-#          mountPath: /tmp
-#      volumes:
-#      - name: webapp-persistent-storage
-#        persistentVolumeClaim:
-#          claimName: wa-pvc
+        volumeMounts:
+        - name: webapp-persistent-storage
+          mountPath: /hello
+      volumes:
+      - name: webapp-persistent-storage
+        persistentVolumeClaim:
+          claimName: wa-pvc
 
