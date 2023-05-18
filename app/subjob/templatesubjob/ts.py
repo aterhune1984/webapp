@@ -1,4 +1,5 @@
 from app.helper import print
+import time
 
 # NOTE: if your code contains API calls, make sure to put some kind of rate limit in
 # so you dont get blocked. if you want, celery is setup already with a rate limit.
@@ -21,6 +22,12 @@ class TemplateSubJob:
         # i am running some code now...
         print('hello world!')
         print('starting some intensive process')
+        with open('/hello/world.txt', 'w') as f:
+            f.write('test')
+        time.sleep(1)
+        with open('/hello/world.txt','r') as f:
+            print(f.read())
+
         t = 0
         while t <= 200000000:
             t*t
