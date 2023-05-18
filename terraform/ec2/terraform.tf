@@ -1,13 +1,19 @@
-
-# Copyright (c) HashiCorp, Inc.
-# SPDX-License-Identifier: MPL-2.0
-
 terraform {
 
+
+  #aws dynamodb create-table \
+  #  --table-name my-terraform-state-lock-table \
+  #  --attribute-definitions AttributeName=LockID,AttributeType=S \
+  #  --key-schema AttributeName=LockID,KeyType=HASH
+
   backend "s3" {
+    bucket = "webapp.tf2.bucket"
     region = "us-east-2"
-    key    = "terraform.tfstate"
+    key    = "ec2_terraform.tfstate"
+    dynamodb_table = "webapp-terraform-state-lock-table"
+    encrypt = true
   }
+
   required_providers {
     aws = {
       source  = "hashicorp/aws"

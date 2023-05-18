@@ -19,7 +19,7 @@ spec:
         tier: frontend
     spec:
       containers:
-      - image: aterhune1984/webappv2:_8371d5935eb24bb7d9b50e171b5bb2833bb2332d
+      - image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
         name: webapp
         resources:
           requests:
@@ -33,11 +33,11 @@ spec:
           - python
         args:
           - "app.py"
-        volumeMounts:
-        - name: webapp-persistent-storage
-          mountPath: /hello
-      volumes:
-      - name: webapp-persistent-storage
-        persistentVolumeClaim:
-          claimName: wa-pvc
+#        volumeMounts:
+#        - name: webapp-persistent-storage
+#          mountPath: /tmp
+#      volumes:
+#      - name: webapp-persistent-storage
+#        persistentVolumeClaim:
+#          claimName: wa-pvc
 

@@ -20,3 +20,8 @@ output "cluster_name" {
   description = "Kubernetes Cluster Name"
   value       = module.eks.cluster_name
 }
+
+output "kubectl_command" {
+  description = "command to switch context for kubectl"
+  value = "aws eks update-kubeconfig --region ${var.region} --name ${module.eks.cluster_name}"
+}
