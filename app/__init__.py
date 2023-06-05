@@ -19,7 +19,6 @@ else:
     async_mode = 'threading'
 from prometheus_flask_exporter import PrometheusMetrics
 
-metrics = PrometheusMetrics(app)
 
 # cleanup tasks if we restarted uncleanly
 r_server = Redis(host=REDIS_HOST,
@@ -29,6 +28,7 @@ r_server = Redis(host=REDIS_HOST,
 r_server.delete('celery_tasks')
 
 app = Flask(__name__)
+metrics = PrometheusMetrics(app)
 app.config.from_object('config')
 socketio = SocketIO(app,
                     async_mode=async_mode,
