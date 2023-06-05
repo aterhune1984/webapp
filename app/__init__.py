@@ -7,6 +7,8 @@ from flask_socketio import SocketIO
 from celery import Celery
 from redis import Redis
 from config import *
+from prometheus_flask_exporter import PrometheusMetrics
+
 import os
 if not os.path.exists('/Users'):
     import eventlet
@@ -28,6 +30,8 @@ r_server.delete('celery_tasks')
 
 app = Flask(__name__)
 app.config.from_object('config')
+metrics = PrometheusMetrics(app)
+
 socketio = SocketIO(app,
                     async_mode=async_mode,
                     message_queue=app.config['SOCKETIO_REDIS_URL'],
