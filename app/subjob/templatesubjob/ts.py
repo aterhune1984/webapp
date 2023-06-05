@@ -1,5 +1,6 @@
 from app.helper import print
 import time
+from app import metrics
 
 # NOTE: if your code contains API calls, make sure to put some kind of rate limit in
 # so you dont get blocked. if you want, celery is setup already with a rate limit.
@@ -18,6 +19,7 @@ class TemplateSubJob:
 
 
 
+    @metrics.counter('templatesubjob_count', 'total count for just templatesubjob')
     def startme(self):
         # i am running some code now...
         print('hello world!')
