@@ -19,3 +19,4 @@ six==1.11.0
 vine
 Werkzeug==0.14.1
 MarkupSafe==2.0.1
+prometheus_flask_exporter

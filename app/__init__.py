@@ -17,7 +17,9 @@ if not os.path.exists('/Users'):
     async_mode = 'eventlet'
 else:
     async_mode = 'threading'
+from prometheus_flask_exporter import PrometheusMetrics
 
+metrics = PrometheusMetrics(app)
 
 # cleanup tasks if we restarted uncleanly
 r_server = Redis(host=REDIS_HOST,
