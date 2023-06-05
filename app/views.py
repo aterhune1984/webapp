@@ -7,7 +7,6 @@ from flask import render_template
 def index():
     return render_template('index.html', async_mode=socketio.async_mode)
 
-
 @app.route('/metrics')
 def metrics():
-    return metrics.registry()
+    return metrics.export()
