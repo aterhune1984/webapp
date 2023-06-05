@@ -9,4 +9,4 @@ def index():
 
 @app.route('/metrics')
 def metrics():
-    return metrics.registry()
+    return metrics.export()
