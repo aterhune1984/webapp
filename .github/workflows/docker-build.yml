@@ -6,7 +6,7 @@ name: "update image"
 # can update the k8s deployment with the necessary info
 
 on:
-  pull_request:
+  push:
     branches:
       - STAGING
     types: [opened]

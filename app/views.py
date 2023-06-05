@@ -1,4 +1,4 @@
-from app import app, socketio
+from app import app, socketio, metrics
 from flask import render_template
 
 
@@ -6,3 +6,7 @@ from flask import render_template
 @app.route('/index', methods=['GET', 'POST'])
 def index():
     return render_template('index.html', async_mode=socketio.async_mode)
+
+@app.route('/metrics')
+def metrics():
+    return metrics.registry()
