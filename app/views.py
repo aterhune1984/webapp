@@ -10,4 +10,4 @@ def index():
 
 @app.route('/metrics')
 def myMetrics():
-    return metrics.registry()
+    return metrics.registry
