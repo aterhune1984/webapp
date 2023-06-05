@@ -6,11 +6,10 @@ name: "update image"
 # can update the k8s deployment with the necessary info
 
 on:
-  push:
+  pull_request:
     branches:
       - STAGING
-      - DEV
-    types: [opened]
+    types: [opened, edited]
     paths-ignore:
       - '.github/**'
       - 'terraform/**'
