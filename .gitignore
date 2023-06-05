@@ -3,6 +3,7 @@
 # Ignore all directories with .terraform in their name
 **/.terraform*/
 **/.terraform.lock.acl
+**/.terraform.lock.hcl
 # Ignore all .tfstate files
 *.tfstate
 *.tfstate.*
