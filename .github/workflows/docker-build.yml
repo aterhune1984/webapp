@@ -9,6 +9,7 @@ on:
   push:
     branches:
       - STAGING
+      - DEV
     types: [opened]
     paths-ignore:
       - '.github/**'
