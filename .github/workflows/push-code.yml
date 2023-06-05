@@ -6,7 +6,7 @@ on:
   pull_request:
     branches:
       - STAGING
-    types: [opened]
+    types: [opened, edited]
     paths:
       - 'k8s/**'
 
