@@ -4,7 +4,7 @@ from flask import render_template
 
 @app.route('/', methods=['GET', 'POST'])
 @app.route('/index', methods=['GET', 'POST'])
-@metrics.counter('hello_world')
+@metrics.counter('hello_world','default counter')
 def index():
     return render_template('index.html', async_mode=socketio.async_mode)
 
