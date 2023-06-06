@@ -1,6 +1,5 @@
 from app.helper import print
 import time
-from prometheus_client import Counter
 
 # NOTE: if your code contains API calls, make sure to put some kind of rate limit in
 # so you don't get blocked. if you want, celery is setup already with a rate limit.
@@ -10,7 +9,6 @@ from prometheus_client import Counter
 # to kick off concurrent requests to core api and celery will handle the rate limiting
 # you will need to make sure you wait for these jobs to finish before referencing the
 # result.  Please see coregrapher > coreg.py and edgecheck > ec.py for examples.
-http_requests_total = Counter('template_executions_total', 'Total templatesubjob executions')
 
 
 class TemplateSubJob:
@@ -21,7 +19,6 @@ class TemplateSubJob:
 
     def startme(self):
         # i am running some code now...
-        http_requests_total.inc()
 
         print('hello world!')
         print('starting some intensive process')
