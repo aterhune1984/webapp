@@ -34,8 +34,5 @@ spec:
         - name: prometheus-config
           configMap:
             name: prometheus-configmap
-            items:
-              - key: prometheus
-                path: prometheus
 
 
