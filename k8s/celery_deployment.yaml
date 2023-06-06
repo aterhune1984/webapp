@@ -19,7 +19,7 @@ spec:
         tier: backend
     spec:
       containers:
-      - image: aterhune1984/webappv2:_94404861960f93129b6c8a74f6bd8a8975a85b36
+      - image: aterhune1984/webappv2:_761f7bdaeb16ced0dec04a0fc85ebb1a76ae7874
         name: celery
         resources:
           requests:

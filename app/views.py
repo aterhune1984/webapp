@@ -1,5 +1,6 @@
-from app import app, socketio, generate_latest, Response
+from app import app, socketio, Response
 from flask import render_template
+from prometheus_client import generate_latest
 
 @app.route('/', methods=['GET', 'POST'])
 @app.route('/index', methods=['GET', 'POST'])
