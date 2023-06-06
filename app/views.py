@@ -1,6 +1,5 @@
-from app import app, socketio, metrics
+from app import app, socketio, generate_latest, Response
 from flask import render_template
-
 
 @app.route('/', methods=['GET', 'POST'])
 @app.route('/index', methods=['GET', 'POST'])
@@ -10,4 +9,4 @@ def index():
 
 @app.route('/metrics')
 def metrics():
-    return metrics.registry()
+    return Response(generate_latest(), mimetype='text/plain')

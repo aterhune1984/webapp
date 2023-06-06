@@ -3,13 +3,19 @@ from __future__ import print_function
 from flask_socketio import emit
 from redis import Redis
 from config import *
-from app import socketio
+from app import socketio, http_requests_total
 from functools import wraps
 from json import loads, dumps
 from time import sleep
 import inspect
 
 
+def track_requests(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        http_requests_total.inc()
+        return func(*args, **kwargs)
+    return wrapper
 
 def test_emit():
     emit('my_response', {'data': '<br>'}, namespace='/socket')
