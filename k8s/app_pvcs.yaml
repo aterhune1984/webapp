@@ -8,4 +8,4 @@ spec:
   resources:
     requests:
       storage: 2Gi
-  storageClassName: sc-slow
+  storageClassName: sc-local

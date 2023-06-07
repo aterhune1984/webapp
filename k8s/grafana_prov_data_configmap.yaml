@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-prov-data-configmap
+data:
+  prometheus.yaml: |
+    apiVersion: 1
+    
+    datasources:
+    - name: prometheusdata
+      type: prometheus
+      access: proxy
+      orgId: 1
+      url: http://prometheus-svc:9090
+      isDefault: true
+      version: 1
+      editable: true
