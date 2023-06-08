@@ -9,7 +9,6 @@ from celery import Celery
 from redis import Redis
 from config import *
 from prometheus_client import Counter
-from prometheus_client import generate_latest
 from flask import Response
 
 import os
@@ -31,8 +30,6 @@ r_server = Redis(host=REDIS_HOST,
                  password=REDIS_PASSWORD)
 r_server.delete('celery_tasks')
 
-
-http_requests_total = Counter('http_requests_total', 'Total HTTP Requests')
 
 app = Flask(__name__)
 app.config.from_object('config')

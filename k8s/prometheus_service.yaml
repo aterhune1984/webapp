@@ -11,4 +11,4 @@ spec:
   selector:
     app: prometheus
     tier: monitoring
-  type: LoadBalancer
+  type: ClusterIP

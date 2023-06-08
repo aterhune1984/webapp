@@ -1,9 +1,9 @@
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
-metadata:
-  name: sc-slow
-provisioner: kubernetes.io/aws-ebs
-parameters:
-  type: gp2
-  iopsPerGB: "10"
-  fsType: ext4
+#apiVersion: storage.k8s.io/v1
+#kind: StorageClass
+#metadata:
+#  name: sc-slow
+#provisioner: kubernetes.io/aws-ebs
+#parameters:
+#  type: gp2
+#  iopsPerGB: "10"
+#  fsType: ext4

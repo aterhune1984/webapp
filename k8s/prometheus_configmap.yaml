@@ -7,4 +7,4 @@ data:
     scrape_configs:
       - job_name: 'myflaskapp'
         static_configs:
-          - targets: ['webapp-svc:8000']
+          - targets: ['webapp-svc:80']

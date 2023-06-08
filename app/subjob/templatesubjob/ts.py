@@ -1,9 +1,8 @@
 from app.helper import print
 import time
-from app.helper import track_requests
 
 # NOTE: if your code contains API calls, make sure to put some kind of rate limit in
-# so you dont get blocked. if you want, celery is setup already with a rate limit.
+# so you don't get blocked. if you want, celery is setup already with a rate limit.
 # you can use:
 # from app.ctasks import api_call
 # api_call.delay(request, session)
@@ -18,9 +17,9 @@ class TemplateSubJob:
         self.sid = sid
         self.payload = payload
 
-    @track_requests
     def startme(self):
         # i am running some code now...
+
         print('hello world!')
         print('starting some intensive process')
         with open('/hello/world.txt', 'w') as f:

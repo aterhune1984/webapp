@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  labels:
+    tier: monitoring
+spec:
+  replicas: 1
+  minReadySeconds: 1
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: grafana
+      tier: monitoring
+  template:
+    metadata:
+      labels:
+        app: grafana
+        tier: monitoring
+    spec:
+      containers:
+      - image: grafana/grafana:latest
+        name: grafana
+        env:
+          - name: GF_SECURITY_ADMIN_USER
+            value: admin
+          - name: GF_SECURITY_ADMIN_PASSWORD
+            value: admin
+        ports:
+        - containerPort: 3000
+        volumeMounts:
+          - name: grafana-lib
+            mountPath: /var/lib/grafana/dashboards
+            readOnly: false
+          - name: grafana-prov-dash
+            mountPath: /etc/grafana/provisioning/dashboards
+          - name: grafana-prov-data
+            mountPath: /etc/grafana/provisioning/datasources
+            readOnly: false
+      volumes:
+        - name: grafana-lib
+          configMap:
+            defaultMode: 420
+            name: grafana-lib-configmap
+        - name: grafana-prov-data
+          configMap:
+            name: grafana-prov-data-configmap
+        - name: grafana-prov-dash
+          configMap:
+            name: grafana-prov-dash-configmap
+
+
