@@ -2,7 +2,7 @@ from app import app, socketio, Response
 from flask import render_template
 from prometheus_client import generate_latest
 from prometheus_client import Counter
-http_requests_total = Counter('pageloads_total', 'Total page loads')
+http_requests_total = Counter('http_requests_total', 'Total http requests')
 
 @app.route('/', methods=['GET', 'POST'])
 @app.route('/index', methods=['GET', 'POST'])
